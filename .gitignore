@@ -3,3 +3,20 @@ coverage/
 dist/
 *.log
 .DS_Store
+
+# IDE / Editor
+.claude/
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Documents (local only)
+*.docx
+*.xlsx
+*.pptx
