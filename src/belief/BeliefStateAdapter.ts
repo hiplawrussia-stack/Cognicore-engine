@@ -12,7 +12,7 @@
  * (c) BF "Drugoi Put", 2025
  */
 
-import type { BeliefState, DimensionBelief } from './IBeliefUpdate';
+import type { BeliefState } from './IBeliefUpdate';
 import type {
   IPLRNNState,
   IPLRNNPrediction,
@@ -170,7 +170,7 @@ export function plrnnStateToBeliefUpdate(
  */
 export function beliefStateToKalmanFormerState(
   belief: BeliefState,
-  contextWindow: number = 24
+  _contextWindow: number = 24
 ): IKalmanFormerState {
   const observation = beliefStateToObservation(belief);
   const uncertainty = beliefStateToUncertainty(belief);
@@ -359,10 +359,7 @@ export class BeliefStateAdapter {
     explain: (state: IKalmanFormerState) => IAttentionWeights;
   };
 
-  constructor(engines?: {
-    plrnn?: typeof this.plrnnEngine;
-    kalmanFormer?: typeof this.kalmanFormerEngine;
-  }) {
+  constructor(engines?: IBeliefAdapterEngines) {
     this.plrnnEngine = engines?.plrnn;
     this.kalmanFormerEngine = engines?.kalmanFormer;
   }
@@ -370,14 +367,14 @@ export class BeliefStateAdapter {
   /**
    * Set PLRNN engine
    */
-  setPLRNNEngine(engine: typeof this.plrnnEngine): void {
+  setPLRNNEngine(engine: IBeliefAdapterEngines['plrnn']): void {
     this.plrnnEngine = engine;
   }
 
   /**
    * Set KalmanFormer engine
    */
-  setKalmanFormerEngine(engine: typeof this.kalmanFormerEngine): void {
+  setKalmanFormerEngine(engine: IBeliefAdapterEngines['kalmanFormer']): void {
     this.kalmanFormerEngine = engine;
   }
 
@@ -421,7 +418,7 @@ export class BeliefStateAdapter {
   /**
    * Extract causal network from current belief and PLRNN weights
    */
-  extractCausalNetwork(belief: BeliefState): ICausalNetwork | null {
+  extractCausalNetwork(_belief: BeliefState): ICausalNetwork | null {
     if (!this.plrnnEngine) {
       return null;
     }

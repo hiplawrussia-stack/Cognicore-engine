@@ -64,7 +64,7 @@ class DefaultLikelihoodModel implements LikelihoodModel {
 
   calculateLikelihood(
     observation: Observation,
-    hypothesizedState: Partial<IStateVector>
+    _hypothesizedState: Partial<IStateVector>
   ): number {
     // Base likelihood from observation reliability
     let likelihood = observation.reliability;
@@ -208,7 +208,7 @@ class DefaultTransitionModel implements TransitionModel {
 export class BeliefUpdateEngine implements IBeliefUpdateEngine {
   private readonly config: BeliefEngineConfig;
   private readonly likelihoodModel: LikelihoodModel;
-  private readonly transitionModel: TransitionModel;
+  private readonly _transitionModel: TransitionModel;
 
   // History storage for belief tracking
   private readonly beliefHistory: Map<string | number, Array<{
@@ -223,7 +223,14 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
   ) {
     this.config = { ...DEFAULT_BELIEF_CONFIG, ...config };
     this.likelihoodModel = likelihoodModel ?? new DefaultLikelihoodModel();
-    this.transitionModel = transitionModel ?? new DefaultTransitionModel();
+    this._transitionModel = transitionModel ?? new DefaultTransitionModel();
+  }
+
+  /**
+   * Get transition model (for advanced POMDP operations)
+   */
+  get transitionModel(): TransitionModel {
+    return this._transitionModel;
   }
 
   /**
@@ -487,10 +494,14 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
     }
 
     // Return aggregate result
+    const lastObservation = sorted[sorted.length - 1];
+    if (!lastObservation) {
+      throw new Error('No observations provided to batchUpdateBelief');
+    }
     return {
       previousBelief: currentBelief,
       newBelief: belief,
-      observation: sorted[sorted.length - 1], // Last observation
+      observation: lastObservation,
       updatedDimensions: Array.from(allUpdatedDimensions),
       totalInformationGain: totalInfoGain,
       surprise: totalSurprise / sorted.length,
@@ -1232,8 +1243,6 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
 
     // Bayesian update for categorical distribution
     // Increase probability of observed emotion, decrease others
-    const totalMass = Array.from(newDistribution.values()).reduce((a, b) => a + b, 0);
-
     for (const [emotion, prob] of newDistribution) {
       if (emotion === observedEmotion) {
         // Increase observed emotion probability
@@ -1267,9 +1276,9 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
   private updateCognitiveBeliefs(
     current: BeliefState['cognitive'],
     observation: Observation,
-    weight: number,
-    updatedDimensions: string[],
-    significantChanges: BeliefUpdateResult['significantChanges']
+    _weight: number,
+    _updatedDimensions: string[],
+    _significantChanges: BeliefUpdateResult['significantChanges']
   ): BeliefState['cognitive'] {
     if (!observation.informsComponents.includes('cognitive')) {
       return current;
@@ -1364,9 +1373,9 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
   private updateResourceBeliefs(
     current: BeliefState['resources'],
     observation: Observation,
-    weight: number,
-    updatedDimensions: string[],
-    significantChanges: BeliefUpdateResult['significantChanges']
+    _weight: number,
+    _updatedDimensions: string[],
+    _significantChanges: BeliefUpdateResult['significantChanges']
   ): BeliefState['resources'] {
     if (!observation.informsComponents.includes('resources')) {
       return current;
@@ -1378,11 +1387,11 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
   }
 
   private calculateTotalInfoGain(
-    oldBelief: BeliefState,
+    _oldBelief: BeliefState,
     newEmotional: BeliefState['emotional'],
-    newCognitive: BeliefState['cognitive'],
+    _newCognitive: BeliefState['cognitive'],
     newRisk: BeliefState['risk'],
-    newResources: BeliefState['resources']
+    _newResources: BeliefState['resources']
   ): number {
     let totalGain = 0;
 
@@ -1410,7 +1419,7 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
 
   private calculateConsistency(
     emotional: BeliefState['emotional'],
-    cognitive: BeliefState['cognitive'],
+    _cognitive: BeliefState['cognitive'],
     risk: BeliefState['risk'],
     resources: BeliefState['resources']
   ): number {
@@ -1498,7 +1507,7 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
       }
     }
 
-    return maxDim;
+    return maxDim ?? 'valence';
   }
 
   private calculateWellbeingFromBelief(belief: BeliefState): number {
