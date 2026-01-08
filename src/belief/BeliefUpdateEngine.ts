@@ -174,8 +174,6 @@ class DefaultTransitionModel implements TransitionModel {
     const drift = this.baseDriftRate * Math.sqrt(timeDelta);
     const reversion = this.meanReversionStrength * timeDelta;
 
-    const result: Partial<IStateVector> = {};
-
     if (currentState.emotional) {
       const currentVAD = currentState.emotional.vad;
 
@@ -187,17 +185,19 @@ class DefaultTransitionModel implements TransitionModel {
       const newDominance = currentVAD.dominance * (1 - reversion) +
         0.5 * reversion + (Math.random() - 0.5) * drift;
 
-      result.emotional = {
-        ...currentState.emotional,
-        vad: {
-          valence: Math.max(-1, Math.min(1, newValence)),
-          arousal: Math.max(-1, Math.min(1, newArousal)),
-          dominance: Math.max(0, Math.min(1, newDominance)),
+      return {
+        emotional: {
+          ...currentState.emotional,
+          vad: {
+            valence: Math.max(-1, Math.min(1, newValence)),
+            arousal: Math.max(-1, Math.min(1, newArousal)),
+            dominance: Math.max(0, Math.min(1, newDominance)),
+          },
         },
-      };
+      } as Partial<IStateVector>;
     }
 
-    return result;
+    return {};
   }
 }
 
@@ -549,99 +549,255 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
         dataQuality: belief.meta.overallConfidence,
       },
       cognitive: {
-        triad: {
-          self: belief.cognitive.selfView.posterior.mean,
-          world: belief.cognitive.worldView.posterior.mean,
-          future: belief.cognitive.futureView.posterior.mean,
-          overall: (
-            belief.cognitive.selfView.posterior.mean +
-            belief.cognitive.worldView.posterior.mean +
-            belief.cognitive.futureView.posterior.mean
-          ) / 3,
+        coreBeliefs: {
+          selfView: belief.cognitive.selfView.posterior.mean,
+          worldView: belief.cognitive.worldView.posterior.mean,
+          futureView: belief.cognitive.futureView.posterior.mean,
+          confidence: {
+            self: belief.meta.overallConfidence,
+            world: belief.meta.overallConfidence,
+            future: belief.meta.overallConfidence,
+          },
         },
-        distortions: [],
-        resilience: {
-          score: belief.resources.copingCapacity.posterior.mean,
+        activeDistortions: [],
+        distortionIntensity: 0,
+        beliefUncertainty: 1 - belief.meta.overallConfidence,
+        attentionalBias: 'neutral' as const,
+        thinkingStyle: {
+          analyticalVsIntuitive: 0.5,
+          abstractVsConcrete: 0.5,
+          locusOfControl: 'balanced' as const,
+          flexibility: 0.5,
+        },
+        coreBeliefPatterns: [],
+        cognitiveLoad: {
+          current: 0.5,
           factors: [],
-          growthAreas: [],
+          availableResources: 0.5,
         },
+        metacognition: {
+          selfAwareness: 0.5,
+          defusion: 0.5,
+          changeBeliefs: 0.5,
+          metaWorry: 0.3,
+        },
+        recentUpdates: [],
         timestamp: belief.timestamp,
         confidence: belief.meta.overallConfidence,
+        dataQuality: belief.meta.overallConfidence,
       },
       narrative: {
-        stage: 'contemplation',
+        stage: 'contemplation' as const,
+        daysInCurrentStage: 0,
+        stageHistory: [],
+        role: 'explorer' as const,
+        roleHistory: [],
+        progressPercent: 50,
+        breakthroughs: [],
+        setbacks: [],
+        momentum: {
+          direction: 0,
+          velocity: 0.5,
+          stability: 0.5,
+          accelerators: [],
+          barriers: [],
+        },
+        chapters: [],
+        currentChapter: {
+          id: 'initial',
+          title: 'Beginning',
+          startDate: belief.timestamp,
+          dominantStage: 'contemplation' as const,
+          dominantRole: 'explorer' as const,
+          keyMoments: [],
+          overallTone: 'neutral' as const,
+        },
         themes: [],
-        values: [],
-        goals: [],
-        progress: 0.5,
-        readinessScore: 0.5,
+        values: {
+          identified: [],
+          meaningSource: 'mixed' as const,
+          purposeClarity: 0.5,
+        },
+        projections: [],
+        possibleTransitions: [],
         timestamp: belief.timestamp,
         confidence: belief.meta.overallConfidence,
+        dataQuality: belief.meta.overallConfidence,
       },
       risk: {
         level: riskLevel,
-        score: riskValue,
-        categories: [],
-        protectiveFactors: [],
-        triggers: [],
-        safetyPlan: {
-          active: false,
-          strategies: [],
-          contacts: [],
-          warningSignsRecognized: [],
-        },
-        trend: 'stable',
-        lastCrisisAssessment: null,
-        timestamp: belief.timestamp,
         confidence: belief.meta.overallConfidence,
+        trajectory: 'stable' as const,
+        riskFactors: [],
+        protectiveFactors: [],
+        earlyWarnings: [],
+        categoryRisks: {} as Record<string, { level: RiskLevel; confidence: number; lastAssessed: Date }>,
+        safetyPlan: {
+          exists: false,
+          completeness: 0,
+          components: [],
+        },
+        supportNetwork: {
+          size: 0,
+          quality: 0.5,
+          accessibility: 0.5,
+          diversity: 0.5,
+          primarySupports: [],
+        },
+        lethalMeans: {
+          assessed: false,
+          accessToMeans: 'unknown' as const,
+          meansRestrictionDiscussed: false,
+          safetyStepsCompleted: [],
+        },
+        crisisHistory: [],
+        effectiveInterventions: [],
+        predictions: [],
+        daysSinceLastCrisis: null,
+        stabilizationPhase: 'stable' as const,
+        timestamp: belief.timestamp,
+        dataQuality: belief.meta.overallConfidence,
+        assessmentMethod: 'automated' as const,
       },
       resources: {
-        energy: {
-          physical: belief.resources.energy.posterior.mean,
-          mental: belief.resources.copingCapacity.posterior.mean,
-          emotional: (
-            belief.resources.energy.posterior.mean +
-            belief.resources.copingCapacity.posterior.mean
-          ) / 2,
-          overall: belief.resources.energy.posterior.mean,
-        },
-        coping: {
-          strategies: [],
-          effectiveCount: 0,
-          adaptability: belief.resources.copingCapacity.posterior.mean,
-        },
-        support: {
-          available: [],
-          utilized: [],
-          satisfaction: belief.resources.socialSupport.posterior.mean,
-        },
         perma: {
-          positive: belief.resources.perma.positive.posterior.mean,
+          positiveEmotion: belief.resources.perma.positive.posterior.mean,
           engagement: belief.resources.perma.engagement.posterior.mean,
           relationships: belief.resources.perma.relationships.posterior.mean,
           meaning: belief.resources.perma.meaning.posterior.mean,
           accomplishment: belief.resources.perma.accomplishment.posterior.mean,
-          overall: (
-            belief.resources.perma.positive.posterior.mean +
-            belief.resources.perma.engagement.posterior.mean +
-            belief.resources.perma.relationships.posterior.mean +
-            belief.resources.perma.meaning.posterior.mean +
-            belief.resources.perma.accomplishment.posterior.mean
-          ) / 5,
         },
+        permaScore: (
+          belief.resources.perma.positive.posterior.mean +
+          belief.resources.perma.engagement.posterior.mean +
+          belief.resources.perma.relationships.posterior.mean +
+          belief.resources.perma.meaning.posterior.mean +
+          belief.resources.perma.accomplishment.posterior.mean
+        ) / 5,
+        copingStrategies: [],
+        effectiveStrategies: [],
+        energy: {
+          current: belief.resources.energy.posterior.mean,
+          baseline: 0.5,
+          trend: 'stable' as const,
+          factors: [],
+        },
+        cognitiveCapacity: {
+          available: belief.resources.copingCapacity.posterior.mean,
+          currentLoad: 1 - belief.resources.copingCapacity.posterior.mean,
+          optimal: 1.0,
+          loadSources: [],
+        },
+        selfEfficacy: {
+          general: belief.resources.copingCapacity.posterior.mean,
+          domains: {},
+          masteryExperiences: [],
+        },
+        resilience: {
+          score: belief.resources.copingCapacity.posterior.mean,
+          components: {
+            adaptability: 0.5,
+            persistence: 0.5,
+            optimism: 0.5,
+            selfRegulation: 0.5,
+            socialSupport: belief.resources.socialSupport.posterior.mean,
+          },
+          recoveryHistory: [],
+        },
+        socialResources: {
+          network: {
+            size: 0,
+            qualityScore: belief.resources.socialSupport.posterior.mean,
+            diversityScore: 0.5,
+            accessibilityScore: 0.5,
+          },
+          supportTypes: {
+            emotional: 0.5,
+            instrumental: 0.5,
+            informational: 0.5,
+            companionship: 0.5,
+          },
+          keyRelationships: [],
+          isolationRisk: 1 - belief.resources.socialSupport.posterior.mean,
+        },
+        timeResources: {
+          perceived: 0.5,
+          selfCareTime: 'adequate' as const,
+          pressure: 0.5,
+          balance: {
+            work_life: 0.5,
+            rest_activity: 0.5,
+            solitude_social: 0.5,
+          },
+        },
+        hopeOptimism: {
+          hope: {
+            agency: 0.5,
+            pathways: 0.5,
+            overall: 0.5,
+          },
+          optimism: {
+            generalExpectancy: 0.5,
+            explanatoryStyle: 'mixed' as const,
+          },
+          futureOrientation: {
+            clarity: 0.5,
+            motivation: 0.5,
+            confidence: belief.meta.overallConfidence,
+          },
+        },
+        depletionWarnings: [],
+        strengths: [],
+        overallAvailability: belief.resources.energy.posterior.mean,
         timestamp: belief.timestamp,
         confidence: belief.meta.overallConfidence,
+        dataQuality: belief.meta.overallConfidence,
       },
-      wellbeingIndex: this.calculateWellbeingFromBelief(belief),
-      stabilityIndex: belief.meta.beliefConsistency,
-      summary: {
-        brief: `Belief-based state estimate`,
-        emotionalSummary: `VAD: (${belief.emotional.valence.posterior.mean.toFixed(2)}, ${belief.emotional.arousal.posterior.mean.toFixed(2)}, ${belief.emotional.dominance.posterior.mean.toFixed(2)})`,
-        riskSummary: `Risk level: ${riskLevel}`,
-        wellbeingScore: this.calculateWellbeingFromBelief(belief),
-        recommendedFocus: [],
+      belief: {
         confidence: belief.meta.overallConfidence,
+        entropy: 1 - belief.meta.overallConfidence,
+        lastObservation: {
+          source: 'inference' as const,
+          timestamp: belief.timestamp,
+          informationGain: belief.meta.averageInformationGain,
+        },
+        observationCount: belief.meta.totalObservations,
       },
+      quality: {
+        overall: belief.meta.overallConfidence,
+        components: {
+          emotional: belief.meta.overallConfidence,
+          cognitive: belief.meta.overallConfidence,
+          narrative: belief.meta.overallConfidence * 0.8,
+          risk: belief.meta.overallConfidence,
+          resources: belief.meta.overallConfidence,
+        },
+        staleness: {
+          emotional: 0,
+          cognitive: 0,
+          narrative: 0,
+          risk: 0,
+          resources: 0,
+        },
+        sufficient: belief.meta.totalObservations >= 3,
+      },
+      recentTransitions: [],
+      predictions: [],
+      summary: {
+        brief: `Belief-based state estimate - confidence: ${(belief.meta.overallConfidence * 100).toFixed(0)}%`,
+        insights: [
+          `VAD: (${belief.emotional.valence.posterior.mean.toFixed(2)}, ${belief.emotional.arousal.posterior.mean.toFixed(2)}, ${belief.emotional.dominance.posterior.mean.toFixed(2)})`,
+        ],
+        concerns: riskLevel !== 'none' ? [`Risk level: ${riskLevel}`] : [],
+        positives: [],
+        focusAreas: [],
+        wellbeingScore: this.calculateWellbeingFromBelief(belief),
+      },
+      recommendations: [],
+      wellbeingIndex: this.calculateWellbeingFromBelief(belief),
+      stabilityIndex: belief.meta.beliefConsistency * 100,
+      resilienceIndex: belief.resources.copingCapacity.posterior.mean * 100,
+      interventionUrgency: riskValue * 100,
     };
   }
 
