@@ -556,6 +556,294 @@ interface IMultimodalInput {
 
 ---
 
+## Расширенный план митигации рисков (January 2025)
+
+> Добавлено на основе анализа конкурентного ландшафта и регуляторной среды 2024-2025
+
+### КРИТИЧЕСКИЙ РИСК 1: Регуляторный тупик для LLM в Mental Health
+
+**Контекст**: Woebot (1.5M пользователей) закрыл B2C приложение 30 июня 2025 из-за отсутствия FDA pathway для LLM-чатботов.
+
+> "Regulatory limbo was a major problem. The FDA has a pathway for rule-based chatbots, but no clear guidance for large language models."
+> — [STAT News, July 2025](https://www.statnews.com/2025/07/02/woebot-therapy-chatbot-shuts-down-founder-says-ai-moving-faster-than-regulators/)
+
+**Митигации**:
+
+| Действие | Timeline | Ответственный | KPI |
+|----------|----------|---------------|-----|
+| **FDA Pre-Submission Meeting** | Q2 2025 | Regulatory Specialist | Meeting scheduled |
+| **Hybrid Architecture Documentation** | Q1 2025 | ML Lead | White paper ready |
+| **Rule-based fallback layer** | Q2 2025 | Backend Engineer | 100% coverage critical paths |
+| **EU AI Act gap analysis** | Q1 2025 | Legal/Regulatory | Compliance checklist |
+
+**Стратегия**: Позиционировать CogniCore как "Software as Medical Device" (SaMD) с rule-based core + LLM enhancement layer:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ USER INTERFACE                                          │
+├─────────────────────────────────────────────────────────┤
+│ LLM ENHANCEMENT LAYER (Optional, Non-Critical)          │
+│ • Personalized message generation                       │
+│ • Natural language understanding                        │
+│ • Requires: Constitutional AI + RAG grounding           │
+├─────────────────────────────────────────────────────────┤
+│ RULE-BASED CORE (FDA 510(k) Eligible)                  │
+│ • Thompson Sampling action selection                    │
+│ • PLRNN state prediction                               │
+│ • Crisis detection (deterministic rules)               │
+│ • Evidence-based intervention templates                 │
+├─────────────────────────────────────────────────────────┤
+│ POMDP + Digital Twin Engine                            │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Прецедент**: FDA cleared Rejoyn (April 2024) как первый DTx для депрессии - использует CBT-based cognitive training, NOT LLM.
+
+---
+
+### КРИТИЧЕСКИЙ РИСК 2: Отсутствие клинической валидации
+
+**Контекст**: CogniCore имеет технологическое преимущество, но нет опубликованных клинических данных. Конкуренты:
+- Wysa: 30+ peer-reviewed publications
+- Woebot: Multiple RCTs (хотя бизнес закрылся)
+- MindSync: $720M funding, 8M users
+
+**Митигации**:
+
+| Фаза | Действие | N | Timeline | Outcome |
+|------|----------|---|----------|---------|
+| **Pilot** | Internal feasibility study | 20-50 | Q2 2025 | Engagement metrics, safety data |
+| **Open Trial** | Single-arm with PHQ-9/GAD-7 | 100 | Q3-Q4 2025 | Pre-post effect size |
+| **RCT** | Waitlist-control or active comparator | 200+ | 2026 | Between-group efficacy |
+| **Publication** | Peer-reviewed journal submission | - | Q1 2026 | Scientific credibility |
+
+**Партнёрства для валидации**:
+- Университетские психиатрические клиники (РФ)
+- Digital health research centers (международные)
+- IRB-approved research protocols
+
+**Минимальный набор метрик для публикации**:
+```typescript
+interface IClinicalOutcomes {
+  primary: {
+    PHQ9_change: number;      // Depression severity
+    GAD7_change: number;      // Anxiety severity
+  };
+  secondary: {
+    engagement: {
+      daysActive: number;
+      sessionsCompleted: number;
+      retentionRate: number;  // 30-day
+    };
+    safety: {
+      adverseEvents: number;
+      crisisEscalations: number;
+      dropoutReasons: string[];
+    };
+  };
+  exploratory: {
+    PLRNNpredictionAccuracy: number;
+    interventionResponseRate: number;
+    userSatisfactionNPS: number;
+  };
+}
+```
+
+---
+
+### КРИТИЧЕСКИЙ РИСК 3: Конкурентное давление
+
+**Контекст**: Высокофинансированные конкуренты могут быстрее достичь market penetration:
+
+| Конкурент | Funding | Users | Differentiation vs CogniCore |
+|-----------|---------|-------|------------------------------|
+| MindSync | $720M | 8M | Consumer scale, no PLRNN |
+| Amae Health | $50M | Enterprise | SMI focus, wearables |
+| Wysa | Undisclosed | Millions | CBT chatbot, no prediction |
+
+**Митигации**:
+
+1. **Technical Moat** (защита через сложность):
+   - PLRNN + KalmanFormer hybrid = уникальная архитектура
+   - Научная публикация методологии → academic citations
+   - Open-source components → community adoption
+
+2. **Niche Focus** (специализация):
+   - Digital addiction (ИКТ-зависимость) = underserved market
+   - Russian-speaking market = less competition
+   - B2B2C model (через клиники, не direct-to-consumer)
+
+3. **Partnership Strategy**:
+   ```
+   Priority Partners:
+   ├── Academic: University psychiatry departments
+   ├── Clinical: Mental health clinics, rehabilitation centers
+   ├── Corporate: Employee wellness programs
+   └── Government: Public health initiatives
+   ```
+
+4. **IP Strategy**:
+   - Patent applications for novel algorithms (PLRNN-Kalman hybrid)
+   - Trade secrets for training data and hyperparameters
+   - Trademark protection for CogniCore brand
+
+---
+
+### ВЫСОКИЙ РИСК 4: LLM Hallucinations в терапевтическом контексте
+
+**Контекст**: LLM могут генерировать вредные советы (медицинские диагнозы, методы самоповреждения).
+
+**Митигации (Defense in Depth)**:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ LAYER 1: PRE-GENERATION FILTERS                        │
+│ • Constitutional AI rules check                         │
+│ • User risk level assessment                           │
+│ • Topic blacklist (medications, diagnoses, self-harm)  │
+├─────────────────────────────────────────────────────────┤
+│ LAYER 2: RAG GROUNDING                                 │
+│ • Evidence-based protocol retrieval                    │
+│ • Citation injection requirement                       │
+│ • Confidence threshold for generation                  │
+├─────────────────────────────────────────────────────────┤
+│ LAYER 3: POST-GENERATION VALIDATION                    │
+│ • Safety classifier (fine-tuned)                       │
+│ • Semantic similarity to approved templates            │
+│ • Human-in-the-loop for edge cases                     │
+├─────────────────────────────────────────────────────────┤
+│ LAYER 4: RUNTIME MONITORING                            │
+│ • User feedback signals                                │
+│ • Anomaly detection in responses                       │
+│ • Automatic escalation triggers                        │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Constitutional Rules (обязательные)**:
+```typescript
+const SAFETY_CONSTITUTION = {
+  NEVER: [
+    'Provide medical diagnoses',
+    'Recommend specific medications or dosages',
+    'Discuss methods of self-harm or suicide',
+    'Promise cure or recovery timeline',
+    'Discourage seeking professional help',
+    'Share information about other users',
+  ],
+  ALWAYS: [
+    'Validate emotions before suggesting techniques',
+    'Recommend professional help for severe symptoms',
+    'Escalate to human at crisis signals (SI/HI)',
+    'Cite evidence-based sources for techniques',
+    'Respect user autonomy in treatment decisions',
+  ],
+  ESCALATION_TRIGGERS: [
+    'Suicidal ideation keywords',
+    'Homicidal ideation keywords',
+    'Psychotic symptoms (hallucinations, delusions)',
+    'Severe self-harm disclosure',
+    'Domestic violence disclosure',
+  ],
+};
+```
+
+---
+
+### СРЕДНИЙ РИСК 5: EU AI Act Compliance (August 2027)
+
+**Контекст**: Healthcare AI = High-Risk category под EU AI Act.
+
+**Требования и митигации**:
+
+| Требование EU AI Act | CogniCore Status | Митигация |
+|---------------------|------------------|-----------|
+| Risk management system | Partial | Formalize in Q2 2025 |
+| Data governance | Partial | GDPR compliance audit |
+| Technical documentation | Missing | Create Model Card Q1 2025 |
+| Record-keeping | Partial | Implement audit logging |
+| Transparency to users | Partial | Explainability dashboard |
+| Human oversight | Implemented | Crisis escalation exists |
+| Accuracy & robustness | Validated | Benchmark documentation |
+| Cybersecurity | Partial | Security audit Q2 2025 |
+
+**Timeline**:
+```
+2025 Q1: Gap analysis complete
+2025 Q2: Technical documentation started
+2025 Q4: Internal compliance audit
+2026 Q2: External compliance review
+2027 Q1: Full compliance ready (6 months buffer)
+```
+
+---
+
+### СРЕДНИЙ РИСК 6: EWS/Bifurcation Scientific Criticism
+
+**Контекст**: Nature Reviews Psychology (Oct 2024) критикует EWS с чувствительностью <50%.
+
+> "There is little support for the use of early warning signals based on critical slowing down in clinical psychology."
+> — [Helmich et al., 2024](https://www.nature.com/articles/s44159-024-00369-y)
+
+**Митигации**:
+
+1. **Hybrid SPC+ML Approach** (уже запланирован в roadmap):
+   - Statistical Process Control для baseline monitoring
+   - ML для context-dependent predictions
+   - Ensemble voting для финальных решений
+
+2. **Transparent Communication**:
+   - Не позиционировать EWS как "предсказание" переходов
+   - Использовать как "risk indicators" с confidence intervals
+   - Документировать ограничения в user-facing materials
+
+3. **Research Agenda**:
+   - Валидация на собственных данных с публикацией результатов
+   - Сравнение с альтернативными методами (PLRNN-based prediction)
+   - Персонализированные thresholds vs population-level
+
+---
+
+### Risk Monitoring Dashboard (Proposed)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ COGNICORE RISK MONITORING                        [January 2025] │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│ REGULATORY RISK          ████████░░ 80% (High)                 │
+│ └── FDA pathway unclear, EU AI Act deadline approaching        │
+│                                                                 │
+│ CLINICAL VALIDATION      █████████░ 90% (Critical)             │
+│ └── No published trials, competitor advantage                  │
+│                                                                 │
+│ COMPETITIVE PRESSURE     ██████░░░░ 60% (Medium)               │
+│ └── Technical moat exists, market niche defined                │
+│                                                                 │
+│ LLM SAFETY               ████░░░░░░ 40% (Medium)               │
+│ └── Constitutional AI planned, RAG in roadmap                  │
+│                                                                 │
+│ TECHNICAL (PLRNN)        ██░░░░░░░░ 20% (Low)                  │
+│ └── Beats persistence baseline, training stable                │
+│                                                                 │
+│ PRIVACY/SECURITY         ███░░░░░░░ 30% (Low-Medium)           │
+│ └── FL planned, DP in roadmap                                  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Quarterly Risk Review Process
+
+| Quarter | Focus | Deliverable |
+|---------|-------|-------------|
+| Q1 2025 | Regulatory landscape scan | FDA Pre-Sub strategy document |
+| Q2 2025 | Clinical validation kickoff | IRB protocol submission |
+| Q3 2025 | Competitive analysis update | Market positioning report |
+| Q4 2025 | EU AI Act gap closure | Compliance readiness assessment |
+
+---
+
 ## Ресурсные требования
 
 ### Команда
@@ -641,6 +929,7 @@ interface IMultimodalInput {
 |--------|------|-------|-----------|
 | 1.0 | 2024-12-28 | БФ "Другой путь" | Initial roadmap based on 80+ sources research |
 | 1.1 | 2025-01-09 | БФ "Другой путь" | **Phase 1.1-1.2 COMPLETED**: PLRNN + KalmanFormer integration, beats persistence baseline |
+| 1.2 | 2025-01-09 | БФ "Другой путь" | **Risk Mitigation Section**: Added comprehensive risk analysis based on competitive landscape and regulatory environment research (6 risk categories, mitigation strategies, monitoring dashboard) |
 
 ---
 
