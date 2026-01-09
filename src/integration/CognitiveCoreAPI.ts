@@ -94,6 +94,15 @@ import type {
   IContextualFeatures,
 } from '../intervention/IInterventionOptimizer';
 
+import {
+  CrisisDetector,
+  createCrisisDetector,
+} from '../crisis/CrisisDetector';
+import type {
+  CrisisDetectionResult,
+  StateRiskData,
+} from '../crisis/CrisisDetector';
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -459,6 +468,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
   private temporalEngine: TemporalEchoEngine;
   private cognitiveMirror: DeepCognitiveMirror;
   private interventionOptimizer: InterventionOptimizer;
+  private crisisDetector: CrisisDetector;
 
   // Intervention library
   private interventions: IIntervention[] = [];
@@ -482,6 +492,15 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
     this.interventionOptimizer = createInterventionOptimizer({
       enableCrisisOverride: config.crisisDetectionEnabled,
       enableContextualBandit: true,
+    });
+
+    // Initialize crisis detector (multi-layer detection)
+    this.crisisDetector = createCrisisDetector({
+      enableLayer1: true,
+      enableLayer2: true,
+      enableLayer3: true,
+      sensitivityLevel: 'high',
+      language: 'auto',
     });
 
     // Initialize default interventions
@@ -811,6 +830,17 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
       const language = detectLanguage(command.text);
       session.context.language = language;
 
+      // 🚨 LAYER 1: Immediate raw text crisis check (BEFORE cognitive analysis)
+      // This catches crisis indicators even if cognitive analysis interprets text differently
+      const immediateCheck = this.crisisDetector.quickCheck(command.text);
+      let earlyWarningTriggered = false;
+
+      if (immediateCheck) {
+        earlyWarningTriggered = true;
+        // Log early warning but continue processing
+        // Full crisis detection will happen after state update
+      }
+
       // 1. Cognitive analysis
       const analysis = await this.cognitiveMirror.analyzeText(command.text, command.userId);
 
@@ -883,11 +913,34 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
         metadata: this.createMetadata(command.userId, command.sessionId, correlationId),
       });
 
-      // 5. Check for crisis
-      const crisisDetected = this.checkCrisis(analysis, newState);
+      // 5. Multi-layer crisis detection (combines raw text + patterns + state)
+      const stateRiskData: StateRiskData = {
+        overallRiskLevel: newState.risk.overallRiskLevel,
+        suicidalIdeation: newState.risk.suicidalIdeation,
+        selfHarmRisk: newState.risk.selfHarmRisk,
+        emotionalValence: newState.emotional.vad.valence,
+        recentTrend: 'stable', // TODO: calculate from history
+      };
 
-      if (crisisDetected) {
+      // Full multi-layer crisis detection
+      const crisisResult = this.crisisDetector.detect(command.text, stateRiskData);
+
+      // Crisis is detected if multi-layer detector says so OR early warning was triggered
+      const crisisDetected = crisisResult.isCrisis || earlyWarningTriggered;
+
+      // Also check legacy indicators for backwards compatibility
+      const legacyCrisis = this.checkCrisis(analysis, newState);
+      const finalCrisisDetected = crisisDetected || legacyCrisis;
+
+      if (finalCrisisDetected) {
         session.context.crisisMode = true;
+
+        // Combine indicators from all sources
+        const allTriggerIndicators = [
+          ...crisisResult.allIndicators,
+          ...(earlyWarningTriggered ? ['early_warning_raw_text'] : []),
+          ...this.extractCrisisIndicators(analysis),
+        ];
 
         await this.emitEvent<ICrisisDetectedEvent>({
           eventId: generateId(),
@@ -899,10 +952,10 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
           payload: {
             userId: command.userId,
             sessionId: command.sessionId,
-            riskLevel: newState.risk.overallRiskLevel,
-            triggerIndicators: this.extractCrisisIndicators(analysis),
-            recommendedAction: 'immediate_response',
-            crisisType: 'acute_distress',
+            riskLevel: Math.max(newState.risk.overallRiskLevel, crisisResult.confidence),
+            triggerIndicators: [...new Set(allTriggerIndicators)],
+            recommendedAction: crisisResult.recommendedAction || 'immediate_response',
+            crisisType: crisisResult.crisisType || 'acute_distress',
           },
           metadata: this.createMetadata(command.userId, command.sessionId, correlationId),
         });
@@ -913,7 +966,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
 
       // 7. Generate Socratic questions if appropriate
       let socraticQuestions: SocraticQuestion[] | undefined;
-      if (allDistortions.length > 0 && !crisisDetected && analysis.thoughts.length > 0) {
+      if (allDistortions.length > 0 && !finalCrisisDetected && analysis.thoughts.length > 0) {
         const firstThought = analysis.thoughts[0];
         socraticQuestions = await this.cognitiveMirror.generateSocraticQuestions(
           firstThought,
@@ -928,7 +981,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
         const shouldDeliver = await this.interventionOptimizer.shouldDeliver(
           command.userId,
           contextFeatures,
-          crisisDetected ? 'crisis_triggered' : 'event_triggered'
+          finalCrisisDetected ? 'crisis_triggered' : 'event_triggered'
         );
 
         if (shouldDeliver) {
@@ -963,7 +1016,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
         insights,
         socraticQuestions,
         recommendedIntervention,
-        crisisDetected,
+        finalCrisisDetected,
         language
       );
 
@@ -985,7 +1038,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
         newBelief,
         insights,
         socraticQuestions,
-        crisisDetected,
+        crisisDetected: finalCrisisDetected,
         recommendedIntervention,
         responseSuggestions,
       };
