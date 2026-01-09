@@ -30,8 +30,8 @@ import type {
 } from '../interfaces/IPLRNNTrainer';
 import type { StudentLifeDataset } from './__tests__/data/StudentLifeLoader';
 
-// Re-export default config
-export { DEFAULT_TRAINING_CONFIG } from '../interfaces/IPLRNNTrainer';
+// Re-export configs
+export { DEFAULT_TRAINING_CONFIG, TUNED_TRAINING_CONFIG } from '../interfaces/IPLRNNTrainer';
 
 /**
  * PLRNN Trainer
@@ -807,22 +807,46 @@ export class PLRNNTrainer {
   private computeLearningRate(epoch: number, config: IPLRNNTrainingConfig): number {
     const { learningRate, lrSchedule, lrDecayFactor, lrDecaySteps, lrMin, epochs } = config;
 
+    // Learning rate warmup (first 5 epochs, but only if we have enough epochs)
+    // Based on research: warmup prevents early divergence
+    const warmupEpochs = Math.min(5, Math.floor(epochs / 4));
+    let warmupFactor = 1.0;
+    if (warmupEpochs > 0 && epoch < warmupEpochs) {
+      warmupFactor = (epoch + 1) / warmupEpochs;
+    }
+
+    let baseLR: number;
+
     switch (lrSchedule) {
       case 'step':
-        return Math.max(lrMin, learningRate * Math.pow(lrDecayFactor, Math.floor(epoch / lrDecaySteps)));
+        baseLR = Math.max(lrMin, learningRate * Math.pow(lrDecayFactor, Math.floor(epoch / lrDecaySteps)));
+        break;
 
       case 'exponential':
-        return Math.max(lrMin, learningRate * Math.pow(lrDecayFactor, epoch / lrDecaySteps));
+        baseLR = Math.max(lrMin, learningRate * Math.pow(lrDecayFactor, epoch / lrDecaySteps));
+        break;
 
-      case 'cosine':
-        // Cosine annealing
-        const progress = epoch / epochs;
-        return lrMin + (learningRate - lrMin) * 0.5 * (1 + Math.cos(Math.PI * progress));
+      case 'cosine': {
+        // Cosine annealing with warmup
+        const effectiveEpochs = Math.max(1, epochs - warmupEpochs);
+        const adjustedEpoch = Math.max(0, epoch - warmupEpochs);
+        const progress = adjustedEpoch / effectiveEpochs;
+        baseLR = lrMin + (learningRate - lrMin) * 0.5 * (1 + Math.cos(Math.PI * Math.min(1, progress)));
+        break;
+      }
 
       case 'constant':
       default:
-        return learningRate;
+        baseLR = learningRate;
     }
+
+    // Ensure we never return NaN or negative
+    const finalLR = baseLR * warmupFactor;
+    if (!Number.isFinite(finalLR) || finalLR < 0) {
+      return lrMin;
+    }
+
+    return finalLR;
   }
 
   // ============================================================================
