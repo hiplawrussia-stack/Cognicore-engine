@@ -133,8 +133,10 @@ export class PLRNNEngine implements IPLRNNEngine {
   }
 
   loadWeights(weights: IPLRNNWeights): void {
-    this.weights = weights;
-    this.config = weights.meta.config;
+    this.weights = JSON.parse(JSON.stringify(weights));
+    if (weights.meta?.config) {
+      this.config = weights.meta.config;
+    }
     this.initialized = true;
   }
 
@@ -142,7 +144,7 @@ export class PLRNNEngine implements IPLRNNEngine {
     if (!this.weights) {
       throw new Error('PLRNN not initialized. Call initialize() first.');
     }
-    return this.weights;
+    return JSON.parse(JSON.stringify(this.weights));
   }
 
   // ============================================================================
@@ -1039,6 +1041,317 @@ export class PLRNNEngine implements IPLRNNEngine {
 
     const Av = this.matVec(W, v);
     return Av.reduce((sum, x, i) => sum + x * v[i], 0);
+  }
+
+  // ============================================================================
+  // BPTT SUPPORT METHODS (for PLRNNTrainer)
+  // ============================================================================
+
+  /**
+   * Get latent dimension
+   */
+  getLatentDim(): number {
+    return this.config.latentDim;
+  }
+
+  /**
+   * Get config
+   */
+  getConfig(): IPLRNNConfig {
+    return { ...this.config };
+  }
+
+  /**
+   * Compute gradients for a single timestep (for BPTT)
+   * Returns gradients for A, W, B, biasLatent, biasObserved
+   */
+  computeStepGradients(
+    prevState: IPLRNNState,
+    currentState: IPLRNNState,
+    target: number[],
+    outputError?: number[]
+  ): {
+    dA: number[];
+    dW: number[][];
+    dB: number[][];
+    dBiasLatent: number[];
+    dBiasObserved: number[];
+    latentError: number[];
+  } {
+    if (!this.weights) {
+      throw new Error('PLRNNEngine not initialized');
+    }
+
+    const { W, B } = this.weights;
+    const n = this.config.latentDim;
+
+    // Output error: (prediction - target)
+    const obsError = outputError ?? currentState.observedState.map(
+      (pred, i) => pred - (target[i] ?? 0)
+    );
+
+    // Gradients for B: dL/dB = obsError * z^T
+    const dB: number[][] = [];
+    for (let i = 0; i < n; i++) {
+      const row: number[] = [];
+      for (let j = 0; j < n; j++) {
+        row[j] = (obsError[i] ?? 0) * (currentState.latentState[j] ?? 0);
+      }
+      dB[i] = row;
+    }
+
+    // Gradient for biasObserved: dL/d_biasObs = obsError
+    const dBiasObserved = [...obsError];
+
+    // Backprop through B: latent error = B^T * obsError
+    const latentError: number[] = [];
+    for (let j = 0; j < n; j++) {
+      let sum = 0;
+      for (let i = 0; i < n; i++) {
+        const bRow = B[i];
+        if (bRow) {
+          sum += (bRow[j] ?? 0) * (obsError[i] ?? 0);
+        }
+      }
+      latentError[j] = sum;
+    }
+
+    // ReLU activations: phi(z) = max(0, z)
+    const phiZ = prevState.latentState.map(v => Math.max(0, v));
+
+    // ReLU derivative: 1 if z > 0, else 0
+    const phiDerivative = prevState.latentState.map(v => v > 0 ? 1 : 0);
+
+    // Gradient for A (diagonal): dL/dA_i = latentError_i * z_{t-1,i}
+    const dA: number[] = [];
+    for (let i = 0; i < n; i++) {
+      dA[i] = (latentError[i] ?? 0) * (prevState.latentState[i] ?? 0);
+    }
+
+    // Gradient for W: dL/dW_ij = latentError_i * phi(z_{t-1})_j
+    const dW: number[][] = [];
+    for (let i = 0; i < n; i++) {
+      const row: number[] = [];
+      for (let j = 0; j < n; j++) {
+        row[j] = (latentError[i] ?? 0) * (phiZ[j] ?? 0);
+      }
+      dW[i] = row;
+    }
+
+    // Gradient for biasLatent: dL/d_biasLat = latentError
+    const dBiasLatent = [...latentError];
+
+    // Propagate error through W and ReLU for next backward step
+    // delta_{t-1} = A * delta_t + (W^T * delta_t) * phi'(z_{t-1})
+    const wTransposeError: number[] = [];
+    for (let j = 0; j < n; j++) {
+      let sum = 0;
+      for (let i = 0; i < n; i++) {
+        const wRow = W[i];
+        if (wRow) {
+          sum += (wRow[j] ?? 0) * (latentError[i] ?? 0);
+        }
+      }
+      wTransposeError[j] = sum * (phiDerivative[j] ?? 0);
+    }
+
+    // Combined error to propagate: A * delta + W^T * delta * phi'
+    const propagatedError = latentError.map((ae, i) => {
+      const aVal = this.weights!.A[i] ?? 0.9;
+      return aVal * ae + (wTransposeError[i] ?? 0);
+    });
+
+    return {
+      dA,
+      dW,
+      dB,
+      dBiasLatent,
+      dBiasObserved,
+      latentError: propagatedError,
+    };
+  }
+
+  /**
+   * Apply accumulated gradients using Adam optimizer
+   */
+  applyGradients(
+    gradients: {
+      dA: number[];
+      dW: number[][];
+      dB: number[][];
+      dBiasLatent: number[];
+      dBiasObserved: number[];
+    },
+    learningRate: number,
+    l1Reg: number = 0.01,
+    l2Reg: number = 0.0001,
+    gradClip: number = 1.0
+  ): void {
+    if (!this.weights) {
+      throw new Error('PLRNNEngine not initialized');
+    }
+
+    const { A, W, B, biasLatent, biasObserved } = this.weights;
+    const n = this.config.latentDim;
+
+    // Initialize Adam state if needed
+    if (!this.adamState) {
+      this.adamState = {
+        m: {},
+        v: {},
+        t: 0,
+      };
+    }
+
+    this.adamState.t += 1;
+    const beta1 = 0.9;
+    const beta2 = 0.999;
+    const epsilon = 1e-8;
+    const t = this.adamState.t;
+
+    // Bias correction
+    const biasCorrection1 = 1 - Math.pow(beta1, t);
+    const biasCorrection2 = 1 - Math.pow(beta2, t);
+
+    // Helper: clip gradient
+    const clip = (g: number): number => Math.max(-gradClip, Math.min(gradClip, g));
+
+    // Update A (diagonal)
+    if (!this.adamState.m['A']) {
+      this.adamState.m['A'] = [Array(n).fill(0)];
+      this.adamState.v['A'] = [Array(n).fill(0)];
+    }
+    for (let i = 0; i < n; i++) {
+      let grad = gradients.dA[i] ?? 0;
+      grad += l2Reg * (A[i] ?? 0); // L2 regularization
+      grad = clip(grad);
+
+      const mA = this.adamState.m['A']![0]!;
+      const vA = this.adamState.v['A']![0]!;
+
+      mA[i] = beta1 * (mA[i] ?? 0) + (1 - beta1) * grad;
+      vA[i] = beta2 * (vA[i] ?? 0) + (1 - beta2) * grad * grad;
+
+      const mHat = mA[i]! / biasCorrection1;
+      const vHat = vA[i]! / biasCorrection2;
+
+      A[i] = (A[i] ?? 0.9) - learningRate * mHat / (Math.sqrt(vHat) + epsilon);
+    }
+
+    // Update W
+    if (!this.adamState.m['W']) {
+      this.adamState.m['W'] = Array(n).fill(null).map(() => Array(n).fill(0));
+      this.adamState.v['W'] = Array(n).fill(null).map(() => Array(n).fill(0));
+    }
+    for (let i = 0; i < n; i++) {
+      const wRow = W[i];
+      const dWRow = gradients.dW[i];
+      if (!wRow || !dWRow) continue;
+
+      for (let j = 0; j < n; j++) {
+        let grad = dWRow[j] ?? 0;
+        const wij = wRow[j] ?? 0;
+        grad += l1Reg * Math.sign(wij); // L1 regularization
+        grad += l2Reg * wij; // L2 regularization
+        grad = clip(grad);
+
+        const mW = this.adamState.m['W']! as number[][];
+        const vW = this.adamState.v['W']! as number[][];
+
+        mW[i]![j] = beta1 * (mW[i]![j] ?? 0) + (1 - beta1) * grad;
+        vW[i]![j] = beta2 * (vW[i]![j] ?? 0) + (1 - beta2) * grad * grad;
+
+        const mHat = mW[i]![j]! / biasCorrection1;
+        const vHat = vW[i]![j]! / biasCorrection2;
+
+        wRow[j] = wij - learningRate * mHat / (Math.sqrt(vHat) + epsilon);
+      }
+    }
+
+    // Update B
+    if (!this.adamState.m['B']) {
+      this.adamState.m['B'] = Array(n).fill(null).map(() => Array(n).fill(0));
+      this.adamState.v['B'] = Array(n).fill(null).map(() => Array(n).fill(0));
+    }
+    for (let i = 0; i < n; i++) {
+      const bRow = B[i];
+      const dBRow = gradients.dB[i];
+      if (!bRow || !dBRow) continue;
+
+      for (let j = 0; j < n; j++) {
+        let grad = dBRow[j] ?? 0;
+        grad += l2Reg * (bRow[j] ?? 0);
+        grad = clip(grad);
+
+        const mB = this.adamState.m['B']! as number[][];
+        const vB = this.adamState.v['B']! as number[][];
+
+        mB[i]![j] = beta1 * (mB[i]![j] ?? 0) + (1 - beta1) * grad;
+        vB[i]![j] = beta2 * (vB[i]![j] ?? 0) + (1 - beta2) * grad * grad;
+
+        const mHat = mB[i]![j]! / biasCorrection1;
+        const vHat = vB[i]![j]! / biasCorrection2;
+
+        bRow[j] = (bRow[j] ?? 0) - learningRate * mHat / (Math.sqrt(vHat) + epsilon);
+      }
+    }
+
+    // Update biases
+    if (!this.adamState.m['biasLatent']) {
+      this.adamState.m['biasLatent'] = [Array(n).fill(0)];
+      this.adamState.v['biasLatent'] = [Array(n).fill(0)];
+    }
+    for (let i = 0; i < n; i++) {
+      let grad = clip(gradients.dBiasLatent[i] ?? 0);
+
+      const mBL = this.adamState.m['biasLatent']![0]!;
+      const vBL = this.adamState.v['biasLatent']![0]!;
+
+      mBL[i] = beta1 * (mBL[i] ?? 0) + (1 - beta1) * grad;
+      vBL[i] = beta2 * (vBL[i] ?? 0) + (1 - beta2) * grad * grad;
+
+      const mHat = mBL[i]! / biasCorrection1;
+      const vHat = vBL[i]! / biasCorrection2;
+
+      biasLatent[i] = (biasLatent[i] ?? 0) - learningRate * mHat / (Math.sqrt(vHat) + epsilon);
+    }
+
+    if (!this.adamState.m['biasObserved']) {
+      this.adamState.m['biasObserved'] = [Array(n).fill(0)];
+      this.adamState.v['biasObserved'] = [Array(n).fill(0)];
+    }
+    for (let i = 0; i < n; i++) {
+      let grad = clip(gradients.dBiasObserved[i] ?? 0);
+
+      const mBO = this.adamState.m['biasObserved']![0]!;
+      const vBO = this.adamState.v['biasObserved']![0]!;
+
+      mBO[i] = beta1 * (mBO[i] ?? 0) + (1 - beta1) * grad;
+      vBO[i] = beta2 * (vBO[i] ?? 0) + (1 - beta2) * grad * grad;
+
+      const mHat = mBO[i]! / biasCorrection1;
+      const vHat = vBO[i]! / biasCorrection2;
+
+      biasObserved[i] = (biasObserved[i] ?? 0) - learningRate * mHat / (Math.sqrt(vHat) + epsilon);
+    }
+  }
+
+  /**
+   * Reset Adam optimizer state (for new training run)
+   */
+  resetAdamState(): void {
+    this.adamState = null;
+  }
+
+  /**
+   * Create a state from observation values
+   */
+  createState(observation: number[], timestamp?: Date): IPLRNNState {
+    const state = this.initializeState(observation);
+    if (timestamp) {
+      state.timestamp = timestamp;
+    }
+    return state;
   }
 }
 
