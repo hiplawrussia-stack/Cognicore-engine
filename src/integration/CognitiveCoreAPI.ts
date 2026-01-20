@@ -56,65 +56,47 @@ import {
 // Direct imports following 2024-2025 best practices (avoid barrel re-exports)
 import { StateVector } from '../state/StateVector';
 import type { IStateVector } from '../state/interfaces/IStateVector';
-import type { TemporalPrediction } from '../state/interfaces/IStateVector';
 
-import {
-  BeliefUpdateEngine,
-  createBeliefUpdateEngine,
-} from '../belief/BeliefUpdateEngine';
-import type {
-  BeliefState,
-  Observation,
-} from '../belief/IBeliefUpdate';
+import { createBeliefUpdateEngine } from '../belief/BeliefUpdateEngine';
+import type { Observation, IFullBeliefState, IBeliefUpdateEngine } from '../belief/IBeliefUpdate';
 
-import {
-  TemporalEchoEngine,
-  createTemporalEchoEngine,
-} from '../temporal/TemporalEchoEngine';
-import type { VulnerabilityWindow } from '../temporal/ITemporalPrediction';
+import { createTemporalEchoEngine } from '../temporal/TemporalEchoEngine';
+import type { ITemporalEchoEngine, VulnerabilityWindow, PredictionPoint } from '../temporal/ITemporalPrediction';
 
-import {
-  DeepCognitiveMirror,
-  createDeepCognitiveMirror,
-} from '../mirror/DeepCognitiveMirror';
+import { createDeepCognitiveMirror } from '../mirror/DeepCognitiveMirror';
 import type {
   TextAnalysisResult,
-  TherapeuticInsight,
   SocraticQuestion,
+  IDeepCognitiveMirror,
+  TherapeuticInsight,
 } from '../mirror/IDeepCognitiveMirror';
 
-import {
-  InterventionOptimizer,
-  createInterventionOptimizer,
-} from '../intervention/InterventionOptimizer';
+import { createInterventionOptimizer } from '../intervention/InterventionOptimizer';
 import type {
   IInterventionSelection,
   IIntervention,
   IInterventionOutcome,
   IContextualFeatures,
+  IInterventionOptimizer,
 } from '../intervention/IInterventionOptimizer';
 
 import {
   CrisisDetector,
   createCrisisDetector,
 } from '../crisis/CrisisDetector';
-import type {
-  CrisisDetectionResult,
-  StateRiskData,
-} from '../crisis/CrisisDetector';
+import type { StateRiskData } from '../crisis/CrisisDetector';
 
 // Phase 1 Engines: Nonlinear dynamics + Multimodal input (ROADMAP v1.5)
-import { PLRNNEngine, createPLRNNEngine } from '../temporal/engines/PLRNNEngine';
-import type { IPLRNNState, IPLRNNPrediction } from '../temporal/interfaces/IPLRNNEngine';
-import { KalmanFormerEngine, createKalmanFormerEngine } from '../temporal/engines/KalmanFormerEngine';
-import type { IKalmanFormerState, IKalmanFormerPrediction } from '../temporal/interfaces/IKalmanFormer';
-import { VoiceInputAdapter, createVoiceInputAdapter } from '../voice/VoiceInputAdapter';
-import type { IVoiceProcessingResult, IMultimodalFusion } from '../voice/interfaces/IVoiceAdapter';
+import { createPLRNNEngine } from '../temporal/engines/PLRNNEngine';
+import type { IPLRNNState, IPLRNNEngine } from '../temporal/interfaces/IPLRNNEngine';
+import { createKalmanFormerEngine } from '../temporal/engines/KalmanFormerEngine';
+import type { IKalmanFormerState, IKalmanFormerEngine } from '../temporal/interfaces/IKalmanFormer';
+import { createVoiceInputAdapter } from '../voice/VoiceInputAdapter';
+import type { IVoiceProcessingResult, IVoiceInputAdapter } from '../voice/interfaces/IVoiceAdapter';
 import {
   beliefStateToPLRNNState,
   beliefStateToKalmanFormerState,
   beliefStateToObservation,
-  plrnnStateToBeliefUpdate,
   type IHybridPrediction,
 } from '../belief/BeliefStateAdapter';
 
@@ -137,12 +119,30 @@ function generateCorrelationId(): string {
 }
 
 /**
- * Create response wrapper
+ * Create success response wrapper
+ */
+function createResponse<T>(
+  success: true,
+  data: T,
+  error: undefined,
+  startTime?: number
+): ICognitiveCoreResponse<T>;
+/**
+ * Create error response wrapper
+ */
+function createResponse<T>(
+  success: false,
+  data: undefined,
+  error: { code: string; message: string; details?: unknown },
+  startTime?: number
+): ICognitiveCoreResponse<T>;
+/**
+ * Implementation
  */
 function createResponse<T>(
   success: boolean,
-  data?: T,
-  error?: { code: string; message: string; details?: unknown },
+  data: T | undefined,
+  error: { code: string; message: string; details?: unknown } | undefined,
   startTime?: number
 ): ICognitiveCoreResponse<T> {
   return {
@@ -163,6 +163,32 @@ function createResponse<T>(
 function detectLanguage(text: string): 'en' | 'ru' {
   const cyrillicPattern = /[\u0400-\u04FF]/;
   return cyrillicPattern.test(text) ? 'ru' : 'en';
+}
+
+/**
+ * Convert RiskLevel to numeric value (0.0 - 1.0)
+ */
+function riskLevelToNumber(level: 'none' | 'low' | 'medium' | 'high' | 'critical'): number {
+  const mapping: Record<string, number> = {
+    'none': 0.0,
+    'low': 0.25,
+    'medium': 0.5,
+    'high': 0.75,
+    'critical': 1.0,
+  };
+  return mapping[level] ?? 0.0;
+}
+
+/**
+ * Extract category risk value from IRiskState
+ */
+function getCategoryRisk(
+  riskState: { categoryRisks?: Record<string, { level: string; confidence: number }> },
+  category: string
+): number {
+  const categoryRisk = riskState.categoryRisks?.[category];
+  if (!categoryRisk) return 0.0;
+  return riskLevelToNumber(categoryRisk.level as 'none' | 'low' | 'medium' | 'high' | 'critical');
 }
 
 // ============================================================================
@@ -291,8 +317,10 @@ class InMemoryEventStore implements IEventStore {
     expectedVersion?: number
   ): Promise<void> {
     for (let i = 0; i < events.length; i++) {
+      const event = events[i];
+      if (!event) continue;
       const version = expectedVersion !== undefined ? expectedVersion + i : undefined;
-      await this.append(streamId, events[i], version);
+      await this.append(streamId, event, version);
     }
   }
 
@@ -352,7 +380,7 @@ class InMemoryEventStore implements IEventStore {
  */
 class InMemoryStateRepository implements IStateRepository {
   private states: Map<string, IStateVector> = new Map();
-  private beliefs: Map<string, BeliefState> = new Map();
+  private beliefs: Map<string, IFullBeliefState> = new Map();
   private history: Map<string, Array<{ state: IStateVector; timestamp: Date }>> = new Map();
 
   async getState(userId: string): Promise<IStateVector | null> {
@@ -375,11 +403,11 @@ class InMemoryStateRepository implements IStateRepository {
     }
   }
 
-  async getBelief(userId: string): Promise<BeliefState | null> {
+  async getBelief(userId: string): Promise<IFullBeliefState | null> {
     return this.beliefs.get(userId) || null;
   }
 
-  async saveBelief(userId: string, belief: BeliefState): Promise<void> {
+  async saveBelief(userId: string, belief: IFullBeliefState): Promise<void> {
     this.beliefs.set(userId, belief);
   }
 
@@ -479,17 +507,17 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
   private sessionRepository: ISessionRepository;
 
   // Cognitive engines
-  private beliefEngine: BeliefUpdateEngine;
-  private temporalEngine: TemporalEchoEngine;
-  private cognitiveMirror: DeepCognitiveMirror;
-  private interventionOptimizer: InterventionOptimizer;
+  private beliefEngine: IBeliefUpdateEngine;
+  private temporalEngine: ITemporalEchoEngine;
+  private cognitiveMirror: IDeepCognitiveMirror;
+  private interventionOptimizer: IInterventionOptimizer;
   private crisisDetector: CrisisDetector;
 
   // Phase 1 Engines: Nonlinear dynamics + Multimodal input
   // Per ROADMAP v1.5: PLRNN for long-horizon, KalmanFormer for short-term
-  private plrnnEngine: PLRNNEngine;
-  private kalmanFormerEngine: KalmanFormerEngine;
-  private voiceAdapter: VoiceInputAdapter;
+  private plrnnEngine: IPLRNNEngine;
+  private kalmanFormerEngine: IKalmanFormerEngine;
+  private voiceAdapter: IVoiceInputAdapter;
 
   // Phase 1 state tracking (per-user PLRNN/KalmanFormer states)
   private userPLRNNStates: Map<string, IPLRNNState> = new Map();
@@ -531,15 +559,16 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
     // Initialize Phase 1 engines: PLRNN + KalmanFormer + Voice
     // Per medRxiv 2025: PLRNN for nonlinear EMA forecasting
     // Per Frontiers Neurorobotics 2025: KalmanFormer for learned Kalman Gain
-    this.plrnnEngine = createPLRNNEngine({
+    const plrnnConfig = {
       latentDim: 5,           // 5D: valence, arousal, dominance, risk, resources
-      connectivity: 'sparse', // For interpretability
+      connectivity: 'sparse' as const, // For interpretability
       learningRate: 0.001,
-      regularization: 0.01,
-    });
-    this.plrnnEngine.initialize();
+      l1Regularization: 0.01,
+    };
+    this.plrnnEngine = createPLRNNEngine(plrnnConfig);
+    this.plrnnEngine.initialize(plrnnConfig);
 
-    this.kalmanFormerEngine = createKalmanFormerEngine({
+    const kfConfig = {
       stateDim: 5,
       obsDim: 5,
       embedDim: 64,
@@ -548,8 +577,9 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
       contextWindow: 24,
       learnedGain: true,       // Per KalmanFormer paper: learn optimal Kalman Gain
       blendRatio: 0.3,         // Favor Kalman for short-term stability
-    });
-    this.kalmanFormerEngine.initialize();
+    };
+    this.kalmanFormerEngine = createKalmanFormerEngine(kfConfig);
+    this.kalmanFormerEngine.initialize(kfConfig);
 
     // Voice adapter for multimodal input (prosody analysis)
     // Per Voice of Mind 2025: AUC 0.71-0.93 for depression/anxiety detection
@@ -717,7 +747,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
       // Create initial belief if needed
       let currentBelief = await this.stateRepository.getBelief(userId);
       if (!currentBelief) {
-        currentBelief = this.beliefEngine.initializeBelief();
+        currentBelief = this.beliefEngine.initializeBelief(userId);
         await this.stateRepository.saveBelief(userId, currentBelief);
       }
 
@@ -944,7 +974,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
           observation,
           previousBelief,
           newBelief,
-          informationGain: beliefUpdate.informationGain,
+          informationGain: beliefUpdate.totalInformationGain,
         },
         metadata: this.createMetadata(command.userId, command.sessionId, correlationId),
       });
@@ -992,10 +1022,11 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
       this.userPLRNNStates.set(command.userId, updatedPLRNNState);
 
       // 5. Multi-layer crisis detection (combines raw text + patterns + state)
+      const overallRisk = riskLevelToNumber(newState.risk.level);
       const stateRiskData: StateRiskData = {
-        overallRiskLevel: newState.risk.overallRiskLevel,
-        suicidalIdeation: newState.risk.suicidalIdeation,
-        selfHarmRisk: newState.risk.selfHarmRisk,
+        overallRiskLevel: overallRisk,
+        suicidalIdeation: getCategoryRisk(newState.risk, 'suicidal_ideation'),
+        selfHarmRisk: getCategoryRisk(newState.risk, 'self_harm'),
         emotionalValence: newState.emotional.vad.valence,
         recentTrend: 'stable', // TODO: calculate from history
       };
@@ -1020,6 +1051,26 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
           ...this.extractCrisisIndicators(analysis),
         ];
 
+        // Map crisis detector action to event action type
+        const actionMap: Record<string, 'immediate_response' | 'escalate' | 'monitor'> = {
+          'none': 'monitor',
+          'monitor': 'monitor',
+          'supportive_response': 'immediate_response',
+          'crisis_protocol': 'immediate_response',
+          'emergency_escalation': 'escalate',
+        };
+        const mappedAction = actionMap[crisisResult.recommendedAction] ?? 'immediate_response';
+
+        // Map crisis type to event crisis type
+        const crisisTypeMap: Record<string, 'self_harm' | 'suicidal_ideation' | 'acute_distress' | 'panic'> = {
+          'suicidal_ideation': 'suicidal_ideation',
+          'suicidal_intent': 'suicidal_ideation',
+          'self_harm': 'self_harm',
+          'acute_distress': 'acute_distress',
+          'psychotic_features': 'panic',
+        };
+        const mappedCrisisType = crisisTypeMap[crisisResult.crisisType ?? ''] ?? 'acute_distress';
+
         await this.emitEvent<ICrisisDetectedEvent>({
           eventId: generateId(),
           eventType: 'CRISIS_DETECTED',
@@ -1030,10 +1081,10 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
           payload: {
             userId: command.userId,
             sessionId: command.sessionId,
-            riskLevel: Math.max(newState.risk.overallRiskLevel, crisisResult.confidence),
+            riskLevel: Math.max(overallRisk, crisisResult.confidence),
             triggerIndicators: [...new Set(allTriggerIndicators)],
-            recommendedAction: crisisResult.recommendedAction || 'immediate_response',
-            crisisType: crisisResult.crisisType || 'acute_distress',
+            recommendedAction: mappedAction,
+            crisisType: mappedCrisisType,
           },
           metadata: this.createMetadata(command.userId, command.sessionId, correlationId),
         });
@@ -1044,8 +1095,8 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
 
       // 7. Generate Socratic questions if appropriate
       let socraticQuestions: SocraticQuestion[] | undefined;
-      if (allDistortions.length > 0 && !finalCrisisDetected && analysis.thoughts.length > 0) {
-        const firstThought = analysis.thoughts[0];
+      const firstThought = analysis.thoughts[0];
+      if (allDistortions.length > 0 && !finalCrisisDetected && firstThought) {
         socraticQuestions = await this.cognitiveMirror.generateSocraticQuestions(
           firstThought,
           2

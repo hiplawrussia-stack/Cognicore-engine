@@ -21,7 +21,6 @@ import type {
   IMIResponseGenerator,
   MIResponseContext,
   MIGenerationConstraints,
-  MITIBehaviorCode,
   OpenQuestionTemplate,
   AffirmationTemplate,
   ReflectionTemplate,
@@ -115,11 +114,13 @@ export class MIResponseGenerator implements IMIResponseGenerator {
     context: MIResponseContext,
     constraints: MIGenerationConstraints
   ): Promise<string> {
-    // Build MI-compliant system prompt
-    const systemPrompt = this.buildMISystemPrompt(constraints, context);
+    // Build MI-compliant system prompt (reserved for LLM integration)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    void this.buildMISystemPrompt(constraints, context);
 
-    // Build user prompt with context
-    const userPrompt = this.buildUserPrompt(prompt, context);
+    // Build user prompt with context (reserved for LLM integration)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    void this.buildUserPrompt(prompt, context);
 
     // In production, this would call the LLM API
     // For now, return a template-based response as fallback
@@ -551,7 +552,7 @@ export class MIResponseGenerator implements IMIResponseGenerator {
 
   private buildMISystemPrompt(
     constraints: MIGenerationConstraints,
-    context: MIResponseContext
+    _context: MIResponseContext
   ): string {
     const lang = constraints.language;
 

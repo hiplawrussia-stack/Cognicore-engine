@@ -23,14 +23,12 @@ import type {
   StateSummary,
   StateBasedRecommendation,
   ObservationSource,
-  WELLBEING_WEIGHTS,
-  getComponentStatus,
 } from './interfaces/IStateVector';
-import type { IEmotionalState, ScoredEmotion, VADDimensions, EmotionTrend } from './interfaces/IEmotionalState';
-import type { ICognitiveState, CognitiveTriad, AttentionalBias, ThinkingStyle, CognitiveLoad, Metacognition } from './interfaces/ICognitiveState';
-import type { INarrativeState, ChangeStage, NarrativeRole, NarrativeMomentum } from './interfaces/INarrativeState';
-import type { IRiskState, RiskLevel, RiskTrajectory, SafetyPlan, SupportNetwork, LethalMeansAssessment } from './interfaces/IRiskState';
-import type { IResourceState, PERMADimensions, EnergyLevel, CognitiveCapacity, SelfEfficacy, Resilience, TimeResources, HopeOptimism, SocialResources } from './interfaces/IResourceState';
+import type { IEmotionalState } from './interfaces/IEmotionalState';
+import type { ICognitiveState } from './interfaces/ICognitiveState';
+import type { INarrativeState } from './interfaces/INarrativeState';
+import type { IRiskState, RiskLevel } from './interfaces/IRiskState';
+import type { IResourceState } from './interfaces/IResourceState';
 
 /**
  * Default Emotional State

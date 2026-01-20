@@ -16,14 +16,12 @@
  * - FIU Business AI suicide detection research (2025)
  */
 
-import { randomUUID } from 'crypto';
 import {
   ICrisisDetectionService,
   ICrisisDetectionResult,
   ISafetyContext,
   ISafetyAction,
   RiskLevel,
-  generateSafetyId,
 } from '../interfaces/ISafetyEnvelope';
 
 // ============================================================================
@@ -336,7 +334,7 @@ export class CrisisDetectionEngine implements ICrisisDetectionService {
   /**
    * Assess risk level from text
    */
-  assessRiskLevel(text: string, context?: Partial<ISafetyContext>): RiskLevel {
+  assessRiskLevel(text: string, _context?: Partial<ISafetyContext>): RiskLevel {
     const result = this.detectByKeywords(text.toLowerCase());
     return result.riskLevel;
   }
@@ -493,7 +491,9 @@ export class CrisisDetectionEngine implements ICrisisDetectionService {
 
     let escalations = 0;
     for (let i = 1; i < levels.length; i++) {
-      if (riskOrder[levels[i]] > riskOrder[levels[i - 1]]) {
+      const currentLevel = levels[i];
+      const prevLevel = levels[i - 1];
+      if (currentLevel && prevLevel && riskOrder[currentLevel] > riskOrder[prevLevel]) {
         escalations++;
       }
     }

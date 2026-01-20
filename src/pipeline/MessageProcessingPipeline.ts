@@ -48,13 +48,11 @@ import {
 
 // Phase 1: Voice input integration for multimodal fusion
 // Per PMC 2025: Multimodal F1=0.97 vs text-only 0.77
-import {
-  VoiceInputAdapter,
-  createVoiceInputAdapter,
-} from '../voice/VoiceInputAdapter';
+import { createVoiceInputAdapter } from '../voice/VoiceInputAdapter';
 import type {
   IVoiceProcessingResult,
   IMultimodalFusion,
+  IVoiceInputAdapter,
 } from '../voice/interfaces/IVoiceAdapter';
 
 // Simple ID generator (avoids ESM uuid package issues with Jest)
@@ -493,17 +491,15 @@ const RESPONSE_TEMPLATES = {
  * Age-adaptive response generator
  */
 class ResponseGenerator {
-  private nlpAnalyzer: NlpAnalyzer;
-
   constructor() {
-    this.nlpAnalyzer = new NlpAnalyzer();
+    // NlpAnalyzer reserved for future advanced response generation
   }
 
   /**
    * Generate response based on analysis and user state
    */
   generate(
-    message: IIncomingMessage,
+    _message: IIncomingMessage,
     analysis: IMessageAnalysis,
     userState: IUserState
   ): IGeneratedResponse {
@@ -571,7 +567,7 @@ class ResponseGenerator {
   private getResponseText(
     type: ResponseType,
     ageGroup: AgeGroup,
-    analysis: IMessageAnalysis
+    _analysis: IMessageAnalysis
   ): string {
     const templates = RESPONSE_TEMPLATES[type as keyof typeof RESPONSE_TEMPLATES];
 
@@ -581,13 +577,13 @@ class ResponseGenerator {
     }
 
     const ageTemplates = templates[ageGroup] || templates['adult'];
-    return ageTemplates[Math.floor(Math.random() * ageTemplates.length)];
+    return ageTemplates[Math.floor(Math.random() * ageTemplates.length)] ?? '';
   }
 
   private getAcknowledgment(ageGroup: AgeGroup): string {
     const templates = RESPONSE_TEMPLATES.acknowledgment;
     const ageTemplates = templates[ageGroup] || templates['adult'];
-    return ageTemplates[Math.floor(Math.random() * ageTemplates.length)];
+    return ageTemplates[Math.floor(Math.random() * ageTemplates.length)] ?? '';
   }
 
   private personalize(
@@ -645,7 +641,7 @@ class ResponseGenerator {
  * Message Processing Pipeline
  */
 export class MessageProcessingPipeline implements IMessageProcessingPipeline {
-  private config: IPipelineConfig;
+  private _config: IPipelineConfig;
   private userStateStore: UserStateStore;
   private nlpAnalyzer: NlpAnalyzer;
   private riskDetector: RiskDetector;
@@ -655,10 +651,10 @@ export class MessageProcessingPipeline implements IMessageProcessingPipeline {
   private startTime: Date;
 
   // Phase 1: Voice adapter for multimodal input
-  private voiceAdapter: VoiceInputAdapter;
+  private voiceAdapter: IVoiceInputAdapter;
 
   constructor(config: Partial<IPipelineConfig> = {}) {
-    this.config = { ...DEFAULT_PIPELINE_CONFIG, ...config };
+    this._config = { ...DEFAULT_PIPELINE_CONFIG, ...config };
     this.userStateStore = new UserStateStore();
     this.nlpAnalyzer = new NlpAnalyzer();
     this.riskDetector = new RiskDetector();
@@ -908,8 +904,15 @@ export class MessageProcessingPipeline implements IMessageProcessingPipeline {
   /**
    * Get voice adapter for direct access (advanced use cases)
    */
-  getVoiceAdapter(): VoiceInputAdapter {
+  getVoiceAdapter(): IVoiceInputAdapter {
     return this.voiceAdapter;
+  }
+
+  /**
+   * Get pipeline configuration
+   */
+  getConfig(): IPipelineConfig {
+    return this._config;
   }
 
   // Private helpers

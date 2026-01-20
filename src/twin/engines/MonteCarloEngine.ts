@@ -20,7 +20,6 @@
 
 import {
   IDigitalTwinState,
-  ITwinStateVariable,
   IScenario,
   IScenarioResult,
   IScenarioComparison,
@@ -434,8 +433,8 @@ export class MonteCarloEngine implements ITwinSimulatorService {
     }
 
     // 2025: Key drivers explanation
-    if (result.keyDrivers.length > 0) {
-      const topDriver = result.keyDrivers[0];
+    const topDriver = result.keyDrivers[0];
+    if (topDriver) {
       findings.push(`Primary driver: ${topDriver.variable} (${topDriver.direction} impact)`);
       findingsRu.push(`Основной фактор: ${topDriver.variable} (${topDriver.direction === 'positive' ? 'положительное' : 'отрицательное'} влияние)`);
     }
@@ -540,7 +539,7 @@ export class MonteCarloEngine implements ITwinSimulatorService {
       if (step === 0) continue;
 
       for (const [varId, values] of Array.from(states)) {
-        const prevValue = values[values.length - 1];
+        const prevValue = values[values.length - 1] ?? 0.5;
         const variable = twin.variables.get(varId);
 
         let newValue = prevValue;
@@ -651,6 +650,16 @@ export class MonteCarloEngine implements ITwinSimulatorService {
 
   private calculateExpectedTrajectory(trajectories: ISimulatedTrajectory[]): ISimulatedTrajectory {
     const firstTraj = trajectories[0];
+    if (!firstTraj) {
+      return {
+        id: 'expected',
+        timepoints: [],
+        states: new Map(),
+        events: [],
+        finalOutcome: 'stable',
+        probability: 1,
+      };
+    }
     const meanStates = new Map<string, number[]>();
 
     for (const varId of Array.from(firstTraj.states.keys())) {
@@ -761,14 +770,15 @@ export class MonteCarloEngine implements ITwinSimulatorService {
     const bestCase = new Map<string, number>();
 
     const firstTraj = trajectories[0];
+    if (!firstTraj) return { expected, worstCase, bestCase };
 
     for (const varId of Array.from(firstTraj.states.keys())) {
       const finalValues: number[] = [];
 
       for (const traj of trajectories) {
         const values = traj.states.get(varId);
-        if (values) {
-          finalValues.push(values[values.length - 1]);
+        if (values && values.length > 0) {
+          finalValues.push(values[values.length - 1] ?? 0);
         }
       }
 
@@ -786,7 +796,9 @@ export class MonteCarloEngine implements ITwinSimulatorService {
     for (const traj of trajectories) {
       for (const [, values] of Array.from(traj.states)) {
         for (let i = 1; i < values.length; i++) {
-          const change = Math.abs(values[i] - values[i - 1]);
+          const curr = values[i] ?? 0;
+          const prev = values[i - 1] ?? 0;
+          const change = Math.abs(curr - prev);
           if (change > 0.25) {  // Large sudden change
             tippingCount++;
             break;
@@ -852,40 +864,42 @@ export class MonteCarloEngine implements ITwinSimulatorService {
         aleatoricSum += variance;
       }
     }
-    const aleatoric = Math.sqrt(aleatoricSum / (trajectories.length * trajectories[0].states.size));
+    const firstTrajStates = trajectories[0]?.states;
+    const aleatoric = Math.sqrt(aleatoricSum / (trajectories.length * (firstTrajStates?.size ?? 1)));
 
     // Epistemic: model uncertainty (between-trajectory variance)
     const endStates: number[][] = [];
     for (const traj of trajectories) {
       const endState: number[] = [];
       for (const [, values] of Array.from(traj.states)) {
-        endState.push(values[values.length - 1]);
+        endState.push(values[values.length - 1] ?? 0);
       }
       endStates.push(endState);
     }
 
     let epistemicSum = 0;
-    const numVars = endStates[0].length;
+    const firstEndState = endStates[0];
+    const numVars = firstEndState?.length ?? 0;
     for (let v = 0; v < numVars; v++) {
-      const varValues = endStates.map(s => s[v]);
+      const varValues = endStates.map(s => s[v] ?? 0);
       epistemicSum += this.variance(varValues);
     }
-    const epistemic = Math.sqrt(epistemicSum / numVars);
+    const epistemic = Math.sqrt(epistemicSum / (numVars || 1));
 
     return { aleatoric, epistemic };
   }
 
   private analyzeKeyDrivers(
     trajectories: ISimulatedTrajectory[],
-    twin: IDigitalTwinState
+    _twin: IDigitalTwinState
   ): Array<{ variable: string; contribution: number; direction: 'positive' | 'negative' }> {
     const contributions: Map<string, number> = new Map();
 
     const expectedTraj = this.calculateExpectedTrajectory(trajectories);
 
     for (const [varId, values] of Array.from(expectedTraj.states)) {
-      const initialValue = values[0];
-      const finalValue = values[values.length - 1];
+      const initialValue = values[0] ?? 0;
+      const finalValue = values[values.length - 1] ?? 0;
       const change = finalValue - initialValue;
 
       contributions.set(varId, Math.abs(change));
@@ -897,7 +911,9 @@ export class MonteCarloEngine implements ITwinSimulatorService {
       .slice(0, 5)  // Top 5
       .map(([variable, contribution]) => {
         const values = expectedTraj.states.get(variable) || [];
-        const direction = values[values.length - 1] > values[0] ? 'positive' : 'negative';
+        const finalVal = values[values.length - 1] ?? 0;
+        const initialVal = values[0] ?? 0;
+        const direction = finalVal > initialVal ? 'positive' : 'negative';
         return { variable, contribution, direction: direction as 'positive' | 'negative' };
       });
 
@@ -994,7 +1010,7 @@ export class MonteCarloEngine implements ITwinSimulatorService {
       let sum = 0;
       for (const varId of distressVars) {
         const vals = traj.states.get(varId);
-        if (vals) sum += vals[vals.length - 1];
+        if (vals && vals.length > 0) sum += vals[vals.length - 1] ?? 0;
       }
       valuesA.push(sum / distressVars.length);
     }
@@ -1003,7 +1019,7 @@ export class MonteCarloEngine implements ITwinSimulatorService {
       let sum = 0;
       for (const varId of distressVars) {
         const vals = traj.states.get(varId);
-        if (vals) sum += vals[vals.length - 1];
+        if (vals && vals.length > 0) sum += vals[vals.length - 1] ?? 0;
       }
       valuesB.push(sum / distressVars.length);
     }
@@ -1139,7 +1155,6 @@ export class MonteCarloEngine implements ITwinSimulatorService {
   }
 
   private std(values: number[]): number {
-    const m = this.mean(values);
     return Math.sqrt(this.variance(values));
   }
 
@@ -1149,9 +1164,10 @@ export class MonteCarloEngine implements ITwinSimulatorService {
   }
 
   private percentile(values: number[], p: number): number {
+    if (values.length === 0) return 0;
     const sorted = [...values].sort((a, b) => a - b);
     const index = Math.floor((p / 100) * sorted.length);
-    return sorted[Math.min(index, sorted.length - 1)];
+    return sorted[Math.min(index, sorted.length - 1)] ?? 0;
   }
 
   private normalCDF(x: number): number {

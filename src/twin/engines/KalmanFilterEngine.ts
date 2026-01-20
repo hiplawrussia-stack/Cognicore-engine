@@ -35,15 +35,23 @@ import {
  */
 function matmul(A: number[][], B: number[][]): number[][] {
   const rowsA = A.length;
-  const colsA = A[0].length;
-  const colsB = B[0].length;
+  const firstRowA = A[0];
+  const firstRowB = B[0];
+  if (!firstRowA || !firstRowB) return [];
+  const colsA = firstRowA.length;
+  const colsB = firstRowB.length;
 
-  const result: number[][] = Array(rowsA).fill(null).map(() => Array(colsB).fill(0));
+  const result: number[][] = Array(rowsA).fill(null).map(() => Array(colsB).fill(0) as number[]);
 
   for (let i = 0; i < rowsA; i++) {
+    const rowA = A[i];
+    const rowR = result[i];
+    if (!rowA || !rowR) continue;
     for (let j = 0; j < colsB; j++) {
       for (let k = 0; k < colsA; k++) {
-        result[i][j] += A[i][k] * B[k][j];
+        const rowB = B[k];
+        if (!rowB) continue;
+        rowR[j] = (rowR[j] ?? 0) + (rowA[k] ?? 0) * (rowB[j] ?? 0);
       }
     }
   }
@@ -56,12 +64,19 @@ function matmul(A: number[][], B: number[][]): number[][] {
  */
 function transpose(A: number[][]): number[][] {
   const rows = A.length;
-  const cols = A[0].length;
-  const result: number[][] = Array(cols).fill(null).map(() => Array(rows).fill(0));
+  const firstRow = A[0];
+  if (!firstRow) return [];
+  const cols = firstRow.length;
+  const result: number[][] = Array(cols).fill(null).map(() => Array(rows).fill(0) as number[]);
 
   for (let i = 0; i < rows; i++) {
+    const rowA = A[i];
+    if (!rowA) continue;
     for (let j = 0; j < cols; j++) {
-      result[j][i] = A[i][j];
+      const rowR = result[j];
+      if (rowR) {
+        rowR[i] = rowA[j] ?? 0;
+      }
     }
   }
 
@@ -72,14 +87,20 @@ function transpose(A: number[][]): number[][] {
  * Matrix addition
  */
 function matadd(A: number[][], B: number[][]): number[][] {
-  return A.map((row, i) => row.map((val, j) => val + B[i][j]));
+  return A.map((row, i) => {
+    const rowB = B[i];
+    return row.map((val, j) => val + (rowB?.[j] ?? 0));
+  });
 }
 
 /**
  * Matrix subtraction
  */
 function matsub(A: number[][], B: number[][]): number[][] {
-  return A.map((row, i) => row.map((val, j) => val - B[i][j]));
+  return A.map((row, i) => {
+    const rowB = B[i];
+    return row.map((val, j) => val - (rowB?.[j] ?? 0));
+  });
 }
 
 /**
@@ -93,21 +114,21 @@ function matscale(A: number[][], s: number): number[][] {
  * Matrix-vector multiplication
  */
 function matvec(A: number[][], v: number[]): number[] {
-  return A.map(row => row.reduce((sum, val, j) => sum + val * v[j], 0));
+  return A.map(row => row.reduce((sum, val, j) => sum + val * (v[j] ?? 0), 0));
 }
 
 /**
  * Vector subtraction
  */
 function vecsub(a: number[], b: number[]): number[] {
-  return a.map((val, i) => val - b[i]);
+  return a.map((val, i) => val - (b[i] ?? 0));
 }
 
 /**
  * Vector addition
  */
 function vecadd(a: number[], b: number[]): number[] {
-  return a.map((val, i) => val + b[i]);
+  return a.map((val, i) => val + (b[i] ?? 0));
 }
 
 /**
@@ -125,21 +146,36 @@ function eye(n: number): number[][] {
  */
 function matinv(A: number[][]): number[][] {
   const n = A.length;
-  const augmented: number[][] = A.map((row, i) => [...row, ...eye(n)[i]]);
+  const eyeMatrix = eye(n);
+  const augmented: number[][] = A.map((row, i) => {
+    const eyeRow = eyeMatrix[i] ?? [];
+    return [...row, ...eyeRow];
+  });
 
   // Forward elimination
   for (let i = 0; i < n; i++) {
+    const rowI = augmented[i];
+    if (!rowI) continue;
+
     // Find pivot
     let maxRow = i;
     for (let k = i + 1; k < n; k++) {
-      if (Math.abs(augmented[k][i]) > Math.abs(augmented[maxRow][i])) {
+      const rowK = augmented[k];
+      const rowMax = augmented[maxRow];
+      if (rowK && rowMax && Math.abs(rowK[i] ?? 0) > Math.abs(rowMax[i] ?? 0)) {
         maxRow = k;
       }
     }
-    [augmented[i], augmented[maxRow]] = [augmented[maxRow], augmented[i]];
+    const rowMax = augmented[maxRow];
+    if (rowMax) {
+      [augmented[i], augmented[maxRow]] = [rowMax, rowI];
+    }
+
+    const rowICurrent = augmented[i];
+    if (!rowICurrent) continue;
 
     // Singular matrix check
-    if (Math.abs(augmented[i][i]) < 1e-10) {
+    if (Math.abs(rowICurrent[i] ?? 0) < 1e-10) {
       // Return identity with small values (regularization)
       return eye(n).map(row => row.map(v => v + 0.001));
     }
@@ -147,17 +183,19 @@ function matinv(A: number[][]): number[][] {
     // Eliminate column
     for (let k = 0; k < n; k++) {
       if (k !== i) {
-        const factor = augmented[k][i] / augmented[i][i];
+        const rowK = augmented[k];
+        if (!rowK) continue;
+        const factor = (rowK[i] ?? 0) / (rowICurrent[i] ?? 1);
         for (let j = 0; j < 2 * n; j++) {
-          augmented[k][j] -= factor * augmented[i][j];
+          rowK[j] = (rowK[j] ?? 0) - factor * (rowICurrent[j] ?? 0);
         }
       }
     }
 
     // Normalize row
-    const pivot = augmented[i][i];
+    const pivot = rowICurrent[i] ?? 1;
     for (let j = 0; j < 2 * n; j++) {
-      augmented[i][j] /= pivot;
+      rowICurrent[j] = (rowICurrent[j] ?? 0) / pivot;
     }
   }
 
@@ -172,19 +210,6 @@ function vecToCol(v: number[]): number[][] {
   return v.map(val => [val]);
 }
 
-/**
- * Column matrix to vector
- */
-function colToVec(m: number[][]): number[] {
-  return m.map(row => row[0]);
-}
-
-/**
- * Outer product
- */
-function outer(a: number[], b: number[]): number[][] {
-  return a.map(ai => b.map(bj => ai * bj));
-}
 
 // ============================================================================
 // KALMAN FILTER ENGINE
@@ -366,6 +391,7 @@ export class KalmanFilterEngine implements IKalmanFilterService {
     for (let k = states.length - 2; k >= 0; k--) {
       const current = smoothed[k];
       const next = smoothed[k + 1];
+      if (!current || !next) continue;
 
       // Smoother gain: C = P · Aᵀ · (P⁻)⁻¹
       const PAt = matmul(current.errorCovariance, transpose(A));
@@ -375,13 +401,13 @@ export class KalmanFilterEngine implements IKalmanFilterService {
       // Smoothed state: x̂ˢ = x̂ + C · (x̂ˢₖ₊₁ - x̂⁻ₖ₊₁)
       const stateDiff = vecsub(next.stateEstimate, next.predictedState);
       const correction = matvec(smootherGain, stateDiff);
-      smoothed[k].stateEstimate = vecadd(current.stateEstimate, correction);
+      current.stateEstimate = vecadd(current.stateEstimate, correction);
 
       // Smoothed covariance: Pˢ = P + C · (Pˢₖ₊₁ - P⁻ₖ₊₁) · Cᵀ
       const covDiff = matsub(next.errorCovariance, next.predictedCovariance);
       const CCovDiff = matmul(smootherGain, covDiff);
       const CCovDiffCt = matmul(CCovDiff, transpose(smootherGain));
-      smoothed[k].errorCovariance = matadd(current.errorCovariance, CCovDiffCt);
+      current.errorCovariance = matadd(current.errorCovariance, CCovDiffCt);
     }
 
     return smoothed;
@@ -406,15 +432,22 @@ export class KalmanFilterEngine implements IKalmanFilterService {
     const R = config.measurementNoiseCovariance;
 
     // Sample innovation covariance
-    const meanInnovation = innovations[0].map((_, j) =>
-      innovations.reduce((sum, inn) => sum + inn[j], 0) / innovations.length
+    const firstInnovation = innovations[0];
+    if (!firstInnovation) return config.processNoiseCovariance;
+
+    const meanInnovation = firstInnovation.map((_, j) =>
+      innovations.reduce((sum, inn) => sum + (inn[j] ?? 0), 0) / innovations.length
     );
 
-    const sampleCov = innovations[0].map((_, i) =>
-      innovations[0].map((_, j) =>
-        innovations.reduce((sum, inn) =>
-          sum + (inn[i] - meanInnovation[i]) * (inn[j] - meanInnovation[j]), 0
-        ) / (innovations.length - 1)
+    const sampleCov = firstInnovation.map((_, i) =>
+      firstInnovation.map((_, j) =>
+        innovations.reduce((sum, inn) => {
+          const innI = inn[i] ?? 0;
+          const innJ = inn[j] ?? 0;
+          const meanI = meanInnovation[i] ?? 0;
+          const meanJ = meanInnovation[j] ?? 0;
+          return sum + (innI - meanI) * (innJ - meanJ);
+        }, 0) / (innovations.length - 1)
       )
     );
 
@@ -445,26 +478,32 @@ export class KalmanFilterEngine implements IKalmanFilterService {
     innovations: number[][],
     config: IKalmanFilterConfig
   ): number[][] {
-    if (innovations.length < 10) return config.measurementNoiseCovariance;
+    const firstInnovation = innovations[0];
+    if (innovations.length < 10 || !firstInnovation) return config.measurementNoiseCovariance;
 
     // Sample covariance of innovations
-    const meanInnovation = innovations[0].map((_, j) =>
-      innovations.reduce((sum, inn) => sum + inn[j], 0) / innovations.length
+    const meanInnovation = firstInnovation.map((_, j) =>
+      innovations.reduce((sum, inn) => sum + (inn[j] ?? 0), 0) / innovations.length
     );
 
-    const sampleCov = innovations[0].map((_, i) =>
-      innovations[0].map((_, j) =>
-        innovations.reduce((sum, inn) =>
-          sum + (inn[i] - meanInnovation[i]) * (inn[j] - meanInnovation[j]), 0
-        ) / (innovations.length - 1)
+    const sampleCov = firstInnovation.map((_, i) =>
+      firstInnovation.map((_, j) =>
+        innovations.reduce((sum, inn) => {
+          const innI = inn[i] ?? 0;
+          const innJ = inn[j] ?? 0;
+          const meanI = meanInnovation[i] ?? 0;
+          const meanJ = meanInnovation[j] ?? 0;
+          return sum + (innI - meanI) * (innJ - meanJ);
+        }, 0) / (innovations.length - 1)
       )
     );
 
     // Exponential moving average with existing R
     const alpha = config.adaptationRate || 0.1;
-    return config.measurementNoiseCovariance.map((row, i) =>
-      row.map((v, j) => (1 - alpha) * v + alpha * sampleCov[i][j])
-    );
+    return config.measurementNoiseCovariance.map((row, i) => {
+      const sampleRow = sampleCov[i];
+      return row.map((v, j) => (1 - alpha) * v + alpha * (sampleRow?.[j] ?? 0));
+    });
   }
 
   // ==========================================================================
@@ -479,16 +518,17 @@ export class KalmanFilterEngine implements IKalmanFilterService {
     const Sinv = matinv(innovationCov);
     const yCol = vecToCol(innovation);
     const yTSinv = matmul(transpose(yCol), Sinv);
-    const nis = matmul(yTSinv, yCol)[0][0];
-    return nis;
+    const result = matmul(yTSinv, yCol);
+    const row0 = result[0];
+    return row0?.[0] ?? 0;
   }
 
   /**
    * Calculate trace ratio of two matrices
    */
   private traceRatio(A: number[][], B: number[][]): number {
-    const traceA = A.reduce((sum, row, i) => sum + row[i], 0);
-    const traceB = B.reduce((sum, row, i) => sum + row[i], 0);
+    const traceA = A.reduce((sum, row, i) => sum + (row[i] ?? 0), 0);
+    const traceB = B.reduce((sum, row, i) => sum + (row[i] ?? 0), 0);
     return traceB > 0 ? traceA / traceB : 1;
   }
 }
@@ -519,7 +559,8 @@ export class EnsembleKalmanFilter {
 
     for (let i = 0; i < this.config.ensembleSize; i++) {
       const member = initialState.map((val, j) => {
-        const std = Math.sqrt(initialCovariance[j][j]);
+        const covRow = initialCovariance[j];
+        const std = Math.sqrt(covRow?.[j] ?? 0);
         return val + std * this.gaussianRandom();
       });
       this.ensemble.push(member);
@@ -542,7 +583,9 @@ export class EnsembleKalmanFilter {
     measurementNoise: number[][]
   ): void {
     const N = this.config.ensembleSize;
-    const stateSize = this.ensemble[0].length;
+    const firstMember = this.ensemble[0];
+    if (!firstMember) return;
+    const stateSize = firstMember.length;
     const obsSize = measurement.length;
 
     // Ensemble mean
@@ -550,38 +593,47 @@ export class EnsembleKalmanFilter {
 
     // Ensemble of predicted observations
     const predictedObs = this.ensemble.map(member => observationOperator(member));
-    const meanObs = predictedObs[0].map((_, j) =>
-      predictedObs.reduce((sum, obs) => sum + obs[j], 0) / N
+    const firstPredObs = predictedObs[0];
+    if (!firstPredObs) return;
+    const meanObs = firstPredObs.map((_, j) =>
+      predictedObs.reduce((sum, obs) => sum + (obs[j] ?? 0), 0) / N
     );
 
     // Anomalies
     const stateAnomalies = this.ensemble.map(member =>
-      member.map((val, j) => val - meanState[j])
+      member.map((val, j) => val - (meanState[j] ?? 0))
     );
     const obsAnomalies = predictedObs.map(obs =>
-      obs.map((val, j) => val - meanObs[j])
+      obs.map((val, j) => val - (meanObs[j] ?? 0))
     );
 
     // Sample covariances
     // PH' = (1/(N-1)) * X_a * Y_a'
-    const PHt: number[][] = Array(stateSize).fill(null).map(() => Array(obsSize).fill(0));
+    const PHt: number[][] = Array(stateSize).fill(null).map(() => Array(obsSize).fill(0) as number[]);
     for (let i = 0; i < stateSize; i++) {
+      const phtRow = PHt[i];
+      if (!phtRow) continue;
       for (let j = 0; j < obsSize; j++) {
         for (let k = 0; k < N; k++) {
-          PHt[i][j] += stateAnomalies[k][i] * obsAnomalies[k][j];
+          const stateAnom = stateAnomalies[k];
+          const obsAnom = obsAnomalies[k];
+          phtRow[j] = (phtRow[j] ?? 0) + (stateAnom?.[i] ?? 0) * (obsAnom?.[j] ?? 0);
         }
-        PHt[i][j] /= (N - 1);
+        phtRow[j] = (phtRow[j] ?? 0) / (N - 1);
       }
     }
 
     // HPH' + R
-    const HPHt: number[][] = Array(obsSize).fill(null).map(() => Array(obsSize).fill(0));
+    const HPHt: number[][] = Array(obsSize).fill(null).map(() => Array(obsSize).fill(0) as number[]);
     for (let i = 0; i < obsSize; i++) {
+      const hphtRow = HPHt[i];
+      if (!hphtRow) continue;
       for (let j = 0; j < obsSize; j++) {
         for (let k = 0; k < N; k++) {
-          HPHt[i][j] += obsAnomalies[k][i] * obsAnomalies[k][j];
+          const obsAnom = obsAnomalies[k];
+          hphtRow[j] = (hphtRow[j] ?? 0) + (obsAnom?.[i] ?? 0) * (obsAnom?.[j] ?? 0);
         }
-        HPHt[i][j] /= (N - 1);
+        hphtRow[j] = (hphtRow[j] ?? 0) / (N - 1);
       }
     }
     const S = matadd(HPHt, measurementNoise);
@@ -598,17 +650,20 @@ export class EnsembleKalmanFilter {
       // Perturb observations (stochastic EnKF)
       let perturbedMeas = measurement;
       if (this.config.perturbObservations) {
-        perturbedMeas = measurement.map((val, j) =>
-          val + Math.sqrt(measurementNoise[j][j]) * this.gaussianRandom()
-        );
+        perturbedMeas = measurement.map((val, j) => {
+          const noiseRow = measurementNoise[j];
+          return val + Math.sqrt(noiseRow?.[j] ?? 0) * this.gaussianRandom();
+        });
       }
 
       // Innovation
-      const innovation = vecsub(perturbedMeas, predictedObs[i]);
+      const predObs = predictedObs[i] ?? [];
+      const innovation = vecsub(perturbedMeas, predObs);
 
       // Update
       const correction = matvec(K, innovation);
-      this.ensemble[i] = vecadd(this.ensemble[i], correction);
+      const currentMember = this.ensemble[i] ?? [];
+      this.ensemble[i] = vecadd(currentMember, correction);
     }
   }
 
@@ -625,16 +680,25 @@ export class EnsembleKalmanFilter {
   getErrorCovariance(): number[][] {
     const mean = this.calculateEnsembleMean();
     const N = this.config.ensembleSize;
-    const stateSize = this.ensemble[0].length;
+    const firstMember = this.ensemble[0];
+    if (!firstMember) return [];
+    const stateSize = firstMember.length;
 
-    const cov: number[][] = Array(stateSize).fill(null).map(() => Array(stateSize).fill(0));
+    const cov: number[][] = Array(stateSize).fill(null).map(() => Array(stateSize).fill(0) as number[]);
 
     for (let i = 0; i < stateSize; i++) {
+      const covRow = cov[i];
+      if (!covRow) continue;
       for (let j = 0; j < stateSize; j++) {
         for (let k = 0; k < N; k++) {
-          cov[i][j] += (this.ensemble[k][i] - mean[i]) * (this.ensemble[k][j] - mean[j]);
+          const member = this.ensemble[k];
+          const memI = member?.[i] ?? 0;
+          const memJ = member?.[j] ?? 0;
+          const meanI = mean[i] ?? 0;
+          const meanJ = mean[j] ?? 0;
+          covRow[j] = (covRow[j] ?? 0) + (memI - meanI) * (memJ - meanJ);
         }
-        cov[i][j] /= (N - 1);
+        covRow[j] = (covRow[j] ?? 0) / (N - 1);
       }
     }
 
@@ -643,8 +707,10 @@ export class EnsembleKalmanFilter {
 
   private calculateEnsembleMean(): number[] {
     const N = this.config.ensembleSize;
-    return this.ensemble[0].map((_, j) =>
-      this.ensemble.reduce((sum, member) => sum + member[j], 0) / N
+    const firstMember = this.ensemble[0];
+    if (!firstMember) return [];
+    return firstMember.map((_, j) =>
+      this.ensemble.reduce((sum, member) => sum + (member[j] ?? 0), 0) / N
     );
   }
 

@@ -17,7 +17,6 @@
  * - CHAI Human-AI Collaboration Standards
  */
 
-import { randomUUID } from 'crypto';
 import {
   IHumanEscalationService,
   IHumanEscalationRequest,
@@ -27,7 +26,6 @@ import {
   EscalationReason,
   EscalationStatus,
   EscalationUrgency,
-  RiskLevel,
   generateSafetyId,
 } from '../interfaces/ISafetyEnvelope';
 

@@ -235,7 +235,7 @@ export class PhenotypingService implements IDigitalPhenotypingService {
     overallRisk: number;
     confidence: number;
   }> {
-    const { mobility, social, sleep, deviceUsage, mentalHealthIndicators } = profile;
+    const { mentalHealthIndicators } = profile;
 
     // Already calculated in profile
     return {
@@ -296,7 +296,9 @@ export class PhenotypingService implements IDigitalPhenotypingService {
     for (const obs of gpsObs) {
       if (Array.isArray(obs.rawValue) && obs.rawValue.length >= 2) {
         // Bin locations to grid
-        const gridKey = `${Math.floor(obs.rawValue[0] * 100)},${Math.floor(obs.rawValue[1] * 100)}`;
+        const val0 = obs.rawValue[0] ?? 0;
+        const val1 = obs.rawValue[1] ?? 0;
+        const gridKey = `${Math.floor(val0 * 100)},${Math.floor(val1 * 100)}`;
         locations.set(gridKey, (locations.get(gridKey) || 0) + 1);
       }
     }
@@ -327,14 +329,17 @@ export class PhenotypingService implements IDigitalPhenotypingService {
       for (const obs of accelObs) {
         const hour = obs.timestamp.getHours();
         const activity = typeof obs.rawValue === 'number' ? obs.rawValue : 0;
-        hourlyActivity[hour] += activity;
-        hourlyCounts[hour]++;
+        const hourlyAct = hourlyActivity[hour];
+        const hourlyCount = hourlyCounts[hour];
+        if (hourlyAct !== undefined) hourlyActivity[hour] = hourlyAct + activity;
+        if (hourlyCount !== undefined) hourlyCounts[hour] = hourlyCount + 1;
       }
 
       // Calculate coefficient of variation
-      const avgActivities = hourlyActivity.map((sum, i) =>
-        hourlyCounts[i] > 0 ? sum / hourlyCounts[i] : 0
-      );
+      const avgActivities = hourlyActivity.map((sum, i) => {
+        const count = hourlyCounts[i] ?? 0;
+        return count > 0 ? sum / count : 0;
+      });
       const mean = avgActivities.reduce((a, b) => a + b, 0) / 24;
       const variance = avgActivities.reduce((sum, a) => sum + (a - mean) ** 2, 0) / 24;
       const cv = mean > 0 ? Math.sqrt(variance) / mean : 0;
@@ -398,7 +403,7 @@ export class PhenotypingService implements IDigitalPhenotypingService {
 
   private calculateSleepMetrics(
     sleepObs: IPhenotypingObservation[],
-    accelObs: IPhenotypingObservation[]
+    _accelObs: IPhenotypingObservation[]
   ): IPhenotypingProfile['sleep'] {
     if (sleepObs.length === 0) {
       return {
@@ -578,8 +583,8 @@ export class PhenotypingService implements IDigitalPhenotypingService {
     switch (observation.source) {
       case 'gps_location':
         if (Array.isArray(observation.rawValue) && observation.rawValue.length >= 2) {
-          features.set('latitude', observation.rawValue[0]);
-          features.set('longitude', observation.rawValue[1]);
+          features.set('latitude', observation.rawValue[0] ?? 0);
+          features.set('longitude', observation.rawValue[1] ?? 0);
           // In real implementation, calculate distance from previous location
           features.set('distance', 0);
         }
@@ -642,7 +647,7 @@ export class PhenotypingService implements IDigitalPhenotypingService {
   }
 
   private extractSourceFeatures(
-    source: PhenotypingSource,
+    _source: PhenotypingSource,
     observations: IPhenotypingObservation[]
   ): Map<string, number> {
     const features = new Map<string, number>();
@@ -701,7 +706,7 @@ export class PhenotypingService implements IDigitalPhenotypingService {
 
     // Day of week
     const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    tags.push(days[now.getDay()]);
+    tags.push(days[now.getDay()] ?? 'unknown');
 
     // Weekend vs weekday
     if (now.getDay() === 0 || now.getDay() === 6) {

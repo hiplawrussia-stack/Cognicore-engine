@@ -17,7 +17,6 @@
  * - MITI 4.2 Coding Manual (Motivational Interviewing)
  */
 
-import { randomUUID } from 'crypto';
 import {
   IConstitutionalPrinciple,
   IConstitutionalClassification,
@@ -25,8 +24,6 @@ import {
   IInputClassification,
   IOutputClassification,
   ISafetyContext,
-  SafetyLevel,
-  generateSafetyId,
 } from '../interfaces/ISafetyEnvelope';
 
 // ============================================================================
@@ -678,7 +675,6 @@ export class ConstitutionalClassifierEngine implements IConstitutionalClassifier
       }
     }
 
-    const overallScore = scores.reduce((sum, s) => sum + s.score, 0) / scores.length;
     const isCompliant = violatedPrinciples.length === 0 &&
                         inputClassification.isAllowed &&
                         outputClassification.isCompliant;
@@ -740,7 +736,7 @@ export class ConstitutionalClassifierEngine implements IConstitutionalClassifier
    */
   private evaluatePrinciple(
     principle: IConstitutionalPrinciple,
-    input: string,
+    _input: string,
     output: string,
     _context?: Partial<ISafetyContext>
   ): { score: number; reasoning: string } {

@@ -26,9 +26,6 @@ import {
   ITwinPersonalization,
   IPhenotypingObservation,
   StateEstimationMethod,
-  TwinStability,
-  AttractorType,
-  SyncMode,
   PhenotypingSource,
   generateTwinId,
 } from '../interfaces/IDigitalTwin';
@@ -361,8 +358,8 @@ export class DigitalTwinService implements IDigitalTwinService {
 
     return {
       userId,
-      timepoints: filteredIndices.map(i => history.timepoints[i]),
-      states: filteredIndices.map(i => history.states[i]),
+      timepoints: filteredIndices.map(i => history.timepoints[i]).filter((t): t is Date => t !== undefined),
+      states: filteredIndices.map(i => history.states[i]).filter((s): s is IDigitalTwinState => s !== undefined),
       interventionsApplied: history.interventionsApplied.filter(
         int => int.timestamp >= cutoff
       ),
@@ -512,14 +509,19 @@ export class DigitalTwinService implements IDigitalTwinService {
         const updated = this.kalmanEngine.update(predicted, [measurement], config);
 
         // Update variable
-        variable.value = updated.stateEstimate[0];
-        variable.variance = updated.errorCovariance[0][0];
+        const stateEst0 = updated.stateEstimate[0] ?? variable.value;
+        const errCov0 = updated.errorCovariance[0];
+        const procNoise0 = config.processNoiseCovariance[0];
+        const measNoise0 = config.measurementNoiseCovariance[0];
+        const gain0 = updated.kalmanGain[0];
+        variable.value = stateEst0;
+        variable.variance = errCov0?.[0] ?? variable.variance;
         variable.kalmanState = {
-          estimate: updated.stateEstimate[0],
-          errorCovariance: updated.errorCovariance[0][0],
-          processNoise: config.processNoiseCovariance[0][0],
-          measurementNoise: config.measurementNoiseCovariance[0][0],
-          gain: updated.kalmanGain[0][0],
+          estimate: stateEst0,
+          errorCovariance: errCov0?.[0] ?? 0,
+          processNoise: procNoise0?.[0] ?? 0,
+          measurementNoise: measNoise0?.[0] ?? 0,
+          gain: gain0?.[0] ?? 0,
         };
       } else {
         // Simple exponential smoothing
@@ -606,8 +608,10 @@ export class DigitalTwinService implements IDigitalTwinService {
       const state = this.kalmanEngine.initialize(config);
       const predicted = this.kalmanEngine.predict(state, config);
 
-      variable.value = predicted.predictedState[0];
-      variable.variance = predicted.predictedCovariance[0][0];
+      const predState0 = predicted.predictedState[0];
+      const predCov0 = predicted.predictedCovariance[0];
+      variable.value = predState0 ?? variable.value;
+      variable.variance = predCov0?.[0] ?? variable.variance;
     }
   }
 
@@ -619,11 +623,14 @@ export class DigitalTwinService implements IDigitalTwinService {
       for (let i = 0; i < 10; i++) {
         const config = this.getKalmanConfig(variable);
         // Add noise to initial state
-        config.initialState[0] += (Math.random() - 0.5) * 0.1;
+        const initState0 = config.initialState[0];
+        if (initState0 !== undefined) {
+          config.initialState[0] = initState0 + (Math.random() - 0.5) * 0.1;
+        }
 
         const state = this.kalmanEngine.initialize(config);
         const predicted = this.kalmanEngine.predict(state, config);
-        estimates.push(predicted.predictedState[0]);
+        estimates.push(predicted.predictedState[0] ?? variable.value);
       }
 
       variable.value = estimates.reduce((a, b) => a + b, 0) / estimates.length;
@@ -813,8 +820,10 @@ export class DigitalTwinService implements IDigitalTwinService {
     let denominator = 0;
 
     for (let i = 1; i < demeaned.length; i++) {
-      numerator += demeaned[i] * demeaned[i - 1];
-      denominator += demeaned[i - 1] ** 2;
+      const curr = demeaned[i] ?? 0;
+      const prev = demeaned[i - 1] ?? 0;
+      numerator += curr * prev;
+      denominator += prev ** 2;
     }
 
     const phi = denominator > 0 ? numerator / denominator : 0;
@@ -829,7 +838,9 @@ export class DigitalTwinService implements IDigitalTwinService {
     // Calculate returns/changes
     const changes: number[] = [];
     for (let i = 1; i < timeSeries.length; i++) {
-      changes.push(timeSeries[i] - timeSeries[i - 1]);
+      const curr = timeSeries[i] ?? 0;
+      const prev = timeSeries[i - 1] ?? 0;
+      changes.push(curr - prev);
     }
 
     // Standard deviation of changes
@@ -846,9 +857,13 @@ export class DigitalTwinService implements IDigitalTwinService {
       const dayValues: number[][] = Array.from({ length: 7 }, () => []);
 
       for (let i = 0; i < history.states.length; i++) {
-        const dayOfWeek = history.timepoints[i].getDay();
-        const value = history.states[i].variables.get(varDef.id)?.value ?? 0.5;
-        dayValues[dayOfWeek].push(value);
+        const timepoint = history.timepoints[i];
+        const state = history.states[i];
+        if (!timepoint || !state) continue;
+        const dayOfWeek = timepoint.getDay();
+        const value = state.variables.get(varDef.id)?.value ?? 0.5;
+        const dayArr = dayValues[dayOfWeek];
+        if (dayArr) dayArr.push(value);
       }
 
       const pattern = dayValues.map(values =>

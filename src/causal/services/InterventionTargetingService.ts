@@ -28,7 +28,6 @@
 import {
   ICausalGraph,
   ICausalNode,
-  ICausalEdge,
   ICausalObservation,
   IInterventionTarget,
   IInterventionTargetingService,
@@ -128,14 +127,19 @@ export class InterventionTargetingService implements IInterventionTargetingServi
         return true;
       });
 
-      if (filtered.length > 0) return filtered[0];
+      const firstFiltered = filtered[0];
+      if (filtered.length > 0 && firstFiltered) return firstFiltered;
     }
 
     if (targets.length === 0) {
       throw new Error(`No intervention targets found for goal ${goalNodeId}`);
     }
 
-    return targets[0];
+    const firstTarget = targets[0];
+    if (!firstTarget) {
+      throw new Error(`No intervention targets found for goal ${goalNodeId}`);
+    }
+    return firstTarget;
   }
 
   async rankTargets(
@@ -301,7 +305,7 @@ export class InterventionTargetingService implements IInterventionTargetingServi
     for (const nodeId of graph.nodes.keys()) {
       const finalValues = trajectories.map(t => {
         const values = t.nodeValues.get(nodeId);
-        return values ? values[values.length - 1] : 0;
+        return values ? (values[values.length - 1] ?? 0) : 0;
       });
 
       expectedOutcome.set(nodeId, this.mean(finalValues));
@@ -321,6 +325,7 @@ export class InterventionTargetingService implements IInterventionTargetingServi
 
     let successCount = 0;
     for (const finalValue of targetFinalValues) {
+      if (finalValue === undefined) continue;
       if (isNegativeTarget && finalValue < baseline) successCount++;
       else if (!isNegativeTarget && finalValue > baseline) successCount++;
     }
@@ -358,12 +363,11 @@ export class InterventionTargetingService implements IInterventionTargetingServi
 
     for (const nodeId of graph.topologicalOrder) {
       if (hypotheticalChange.has(nodeId)) {
-        result.set(nodeId, hypotheticalChange.get(nodeId)!);
+        result.set(nodeId, hypotheticalChange.get(nodeId) ?? 0);
       } else {
         const parents = graph.reverseAdjacency.get(nodeId) || [];
 
         if (parents.length === 0) {
-          const node = graph.nodes.get(nodeId);
           result.set(nodeId,
             (observation.variables.get(nodeId) ?? 0) + (exogenous.get(nodeId) ?? 0)
           );
@@ -745,7 +749,7 @@ export class InterventionTargetingService implements IInterventionTargetingServi
     return contraindications;
   }
 
-  private scoreTarget(target: IInterventionTarget, goalNode: ICausalNode): number {
+  private scoreTarget(target: IInterventionTarget, _goalNode: ICausalNode): number {
     const weights = {
       expectedEffect: 0.35,
       feasibility: 0.25,
@@ -777,12 +781,16 @@ export class InterventionTargetingService implements IInterventionTargetingServi
     }
 
     for (let t = 1; t < timepoints.length; t++) {
-      const dt = timepoints[t] - timepoints[t - 1];
+      const currentTime = timepoints[t];
+      const prevTime = timepoints[t - 1];
+      if (currentTime === undefined || prevTime === undefined) continue;
+      const dt = currentTime - prevTime;
 
       for (const nodeId of graph.topologicalOrder) {
-        const node = graph.nodes.get(nodeId)!;
-        const prevValues = nodeValues.get(nodeId)!;
-        const prevValue = prevValues[prevValues.length - 1];
+        const node = graph.nodes.get(nodeId);
+        const prevValues = nodeValues.get(nodeId);
+        if (!node || !prevValues) continue;
+        const prevValue = prevValues[prevValues.length - 1] ?? node.value;
 
         let newValue = prevValue;
 
@@ -796,10 +804,11 @@ export class InterventionTargetingService implements IInterventionTargetingServi
         const parents = graph.reverseAdjacency.get(nodeId) || [];
         for (const parentId of parents) {
           const edge = graph.edges.get(`${parentId}->${nodeId}`);
-          const parentValues = nodeValues.get(parentId)!;
-          const parentPrev = parentValues[parentValues.length - 1];
+          const parentValues = nodeValues.get(parentId);
+          if (!parentValues) continue;
+          const parentPrev = parentValues[parentValues.length - 1] ?? 0;
           const parentPrevPrev = parentValues.length > 1 ?
-            parentValues[parentValues.length - 2] : parentPrev;
+            (parentValues[parentValues.length - 2] ?? parentPrev) : parentPrev;
 
           if (edge) {
             const parentChange = parentPrev - parentPrevPrev;
@@ -866,9 +875,10 @@ export class InterventionTargetingService implements IInterventionTargetingServi
   }
 
   private percentile(values: number[], p: number): number {
+    if (values.length === 0) return 0;
     const sorted = [...values].sort((a, b) => a - b);
     const index = Math.floor((p / 100) * sorted.length);
-    return sorted[Math.min(index, sorted.length - 1)];
+    return sorted[Math.min(index, sorted.length - 1)] ?? 0;
   }
 }
 

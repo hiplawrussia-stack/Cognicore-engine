@@ -17,7 +17,6 @@
  * - EU AI Act Article 5 (Prohibited Practices)
  */
 
-import { randomUUID } from 'crypto';
 import {
   ISafetyInvariant,
   ISafetyInvariantService,
@@ -27,7 +26,6 @@ import {
   ISafetyRecommendation,
   ISafetyAction,
   SafetyInvariantCategory,
-  SafetyViolationAction,
   generateSafetyId,
 } from '../interfaces/ISafetyEnvelope';
 

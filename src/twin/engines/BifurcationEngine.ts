@@ -30,7 +30,6 @@ import {
   IInterventionRecommendation,
   BifurcationType,
   AttractorType,
-  ScenarioOutcome,
   generateTwinId,
 } from '../interfaces/IDigitalTwin';
 
@@ -349,7 +348,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     const { rate, r2 } = this.fitExponentialApproach(timeSeries, tippingPoint.criticalThreshold);
 
     // Calculate time estimate
-    const currentValue = timeSeries[timeSeries.length - 1];
+    const currentValue = timeSeries[timeSeries.length - 1] ?? 0;
     const distance = Math.abs(tippingPoint.criticalThreshold - currentValue);
 
     let estimatedDays: number;
@@ -378,7 +377,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
 
   async distanceToTippingPoint(
     twin: IDigitalTwinState,
-    stateHistory: IStateTrajectory
+    _stateHistory: IStateTrajectory
   ): Promise<{
     distance: number;
     direction: string;
@@ -438,14 +437,14 @@ export class BifurcationEngine implements ITippingPointDetectorService {
 
   async findPreventiveIntervention(
     tippingPoint: ITippingPoint,
-    twin: IDigitalTwinState
+    _twin: IDigitalTwinState
   ): Promise<IInterventionRecommendation | null> {
     const interventions = this.findInterventions(
       tippingPoint.criticalParameter,
       tippingPoint.estimatedTimeToPoint < 3 ? 'critical' : 'high'
     );
 
-    return interventions.length > 0 ? interventions[0] : null;
+    return interventions[0] ?? null;
   }
 
   // ==========================================================================
@@ -531,11 +530,14 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     let denominator = 0;
 
     for (let i = 0; i < n; i++) {
-      numerator += (series[i] - mean) * (series[i + lag] - mean);
+      const xi = series[i] ?? 0;
+      const xiLag = series[i + lag] ?? 0;
+      numerator += (xi - mean) * (xiLag - mean);
     }
 
     for (let i = 0; i < series.length; i++) {
-      denominator += (series[i] - mean) ** 2;
+      const xi = series[i] ?? 0;
+      denominator += (xi - mean) ** 2;
     }
 
     return denominator > 0 ? numerator / denominator : 0;
@@ -561,9 +563,11 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     const recoveryRates: number[] = [];
 
     for (let i = 1; i < series.length - 1; i++) {
-      const deviation = Math.abs(series[i] - mean);
+      const xi = series[i] ?? 0;
+      const xiNext = series[i + 1] ?? 0;
+      const deviation = Math.abs(xi - mean);
       if (deviation > 0.1) {
-        const recovery = Math.abs(series[i + 1] - mean) / (deviation + 0.001);
+        const recovery = Math.abs(xiNext - mean) / (deviation + 0.001);
         recoveryRates.push(1 - recovery);
       }
     }
@@ -638,7 +642,10 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     // Find peaks
     const peaks: number[] = [];
     for (let i = 1; i < histogram.length - 1; i++) {
-      if (histogram[i] > histogram[i - 1] && histogram[i] > histogram[i + 1]) {
+      const curr = histogram[i] ?? 0;
+      const prev = histogram[i - 1] ?? 0;
+      const next = histogram[i + 1] ?? 0;
+      if (curr > prev && curr > next) {
         peaks.push(i);
       }
     }
@@ -646,12 +653,16 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     if (peaks.length < 2) return 0;
 
     // Count transitions between modes
-    const threshold = (peaks[0] + peaks[1]) / 2 / 10;
+    const peak0 = peaks[0] ?? 0;
+    const peak1 = peaks[1] ?? 0;
+    const threshold = (peak0 + peak1) / 2 / 10;
     let transitions = 0;
 
     for (let i = 1; i < series.length; i++) {
-      if ((series[i - 1] < threshold && series[i] >= threshold) ||
-          (series[i - 1] >= threshold && series[i] < threshold)) {
+      const prev = series[i - 1] ?? 0;
+      const curr = series[i] ?? 0;
+      if ((prev < threshold && curr >= threshold) ||
+          (prev >= threshold && curr < threshold)) {
         transitions++;
       }
     }
@@ -668,8 +679,10 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     let crossings = 0;
 
     for (let i = 1; i < series.length; i++) {
-      if ((series[i - 1] < mean && series[i] >= mean) ||
-          (series[i - 1] >= mean && series[i] < mean)) {
+      const prev = series[i - 1] ?? 0;
+      const curr = series[i] ?? 0;
+      if ((prev < mean && curr >= mean) ||
+          (prev >= mean && curr < mean)) {
         crossings++;
       }
     }
@@ -854,7 +867,8 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     const times: number[] = [];
 
     for (let i = 0; i < series.length; i++) {
-      const distance = Math.abs(threshold - series[i]);
+      const val = series[i] ?? 0;
+      const distance = Math.abs(threshold - val);
       if (distance > 0.01) {
         logDistances.push(Math.log(distance));
         times.push(i);
@@ -871,7 +885,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     const ssTotal = logDistances.reduce((sum, d) => sum + (d - meanLogD) ** 2, 0);
     const predictions = times.map(t => fit.intercept + fit.slope * t);
     const ssResidual = predictions.reduce((sum, pred, i) =>
-      sum + (logDistances[i] - pred) ** 2, 0
+      sum + ((logDistances[i] ?? 0) - pred) ** 2, 0
     );
     const r2 = ssTotal > 0 ? Math.max(0, 1 - ssResidual / ssTotal) : 0;
 
@@ -884,7 +898,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
 
     const sumX = xVals.reduce((a, b) => a + b, 0);
     const sumY = y.reduce((a, b) => a + b, 0);
-    const sumXY = xVals.reduce((sum, xi, i) => sum + xi * y[i], 0);
+    const sumXY = xVals.reduce((sum, xi, i) => sum + xi * (y[i] ?? 0), 0);
     const sumX2 = xVals.reduce((sum, xi) => sum + xi * xi, 0);
 
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
@@ -946,7 +960,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     return timeFactor * 0.6 + ewsFactor * 0.4;
   }
 
-  private identifyAttractors(twin: IDigitalTwinState): IAttractorBasin[] {
+  private identifyAttractors(_twin: IDigitalTwinState): IAttractorBasin[] {
     return [
       {
         attractorId: 'healthy',

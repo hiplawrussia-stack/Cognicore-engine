@@ -24,18 +24,11 @@ import type {
   MCQ30Subscales,
   MCQ30Subscale,
   CognitiveAttentionalSyndrome,
-  CASWorryRumination,
-  CASThreatMonitoring,
-  CASMaladaptiveCoping,
   MetacognitiveBeliefs,
   BeliefCluster,
   SpecificBelief,
-  TreatmentTarget,
-  TreatmentTargetType,
   MCTIntervention,
   WorryRuminationTheme,
-  MaladaptiveStrategy,
-  MaladaptiveStrategyType
 } from '../interfaces/IMetacognitiveState';
 
 import {

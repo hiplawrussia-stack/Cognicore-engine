@@ -22,7 +22,7 @@
 
 import type { IStateVector } from '../state/interfaces/IStateVector';
 import type { TemporalPrediction } from '../state/interfaces/IStateVector';
-import type { BeliefState, Observation } from '../belief/IBeliefUpdate';
+import type { IFullBeliefState, Observation } from '../belief/IBeliefUpdate';
 import type { VulnerabilityWindow } from '../temporal/ITemporalPrediction';
 import type { TextAnalysisResult, TherapeuticInsight, SocraticQuestion } from '../mirror/IDeepCognitiveMirror';
 import type { IInterventionSelection, IIntervention, IInterventionOutcome } from '../intervention/IInterventionOptimizer';
@@ -154,8 +154,8 @@ export interface IBeliefUpdatedEvent extends IDomainEvent {
   payload: {
     userId: string;
     observation: Observation;
-    previousBelief: BeliefState;
-    newBelief: BeliefState;
+    previousBelief: IFullBeliefState;
+    newBelief: IFullBeliefState;
     informationGain: number;
   };
 }
@@ -360,7 +360,7 @@ export interface IUserSession {
   currentState: IStateVector;
 
   /** Current belief state */
-  currentBelief: BeliefState;
+  currentBelief: IFullBeliefState;
 
   /** Message count in session */
   messageCount: number;
@@ -506,14 +506,14 @@ export interface IStateRepository {
    * @param userId - User identifier
    * @returns Current belief or null
    */
-  getBelief(userId: string): Promise<BeliefState | null>;
+  getBelief(userId: string): Promise<IFullBeliefState | null>;
 
   /**
    * Save user's belief state
    * @param userId - User identifier
    * @param belief - Belief to save
    */
-  saveBelief(userId: string, belief: BeliefState): Promise<void>;
+  saveBelief(userId: string, belief: IFullBeliefState): Promise<void>;
 
   /**
    * Get state history
@@ -616,7 +616,7 @@ export interface IUserStateResult {
   currentState: IStateVector;
 
   /** Current belief */
-  currentBelief: BeliefState;
+  currentBelief: IFullBeliefState;
 
   /** State history if requested */
   history?: Array<{ state: IStateVector; timestamp: Date }>;
@@ -789,7 +789,7 @@ export interface IMessageProcessingResult {
   newState: IStateVector;
 
   /** Updated belief */
-  newBelief: BeliefState;
+  newBelief: IFullBeliefState;
 
   /** Generated insights */
   insights: TherapeuticInsight[];
@@ -922,7 +922,7 @@ export interface ICognitiveCoreAPI {
    */
   recordObservation(
     command: IRecordObservationCommand
-  ): Promise<ICognitiveCoreResponse<{ state: IStateVector; belief: BeliefState }>>;
+  ): Promise<ICognitiveCoreResponse<{ state: IStateVector; belief: IFullBeliefState }>>;
 
   /**
    * Get temporal predictions

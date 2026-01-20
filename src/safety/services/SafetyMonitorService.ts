@@ -18,7 +18,6 @@
  * - Real-time monitoring (OWASP Top 10 2025)
  */
 
-import { randomUUID } from 'crypto';
 import {
   ISafetyMonitor,
   ISafetyContext,
@@ -42,7 +41,7 @@ import { SafetyInvariantService, safetyInvariantService } from './SafetyInvarian
 import { ConstitutionalClassifierEngine, constitutionalClassifierEngine } from '../engines/ConstitutionalClassifierEngine';
 import { CrisisDetectionEngine, crisisDetectionEngine } from '../engines/CrisisDetectionEngine';
 import { HumanEscalationService, humanEscalationService } from './HumanEscalationService';
-import { SAFETY_LEVEL_CONFIGS, CURRENT_SAFETY_LEVEL, EU_AI_ACT_CLASSIFICATION } from '../utils/SafetyLevels';
+import { EU_AI_ACT_CLASSIFICATION } from '../utils/SafetyLevels';
 import { COGNICORE_MODEL_CARD } from '../utils/ModelCard';
 
 // ============================================================================
@@ -820,7 +819,7 @@ export class SafetyMonitorService implements ISafetyMonitor {
 
   private calculateOverallConfidence(
     violations: ISafetyViolation[],
-    guardrailResults: IGuardrailCheckResult[]
+    _guardrailResults: IGuardrailCheckResult[]
   ): number {
     if (violations.length === 0) return 0.95;
 
@@ -850,10 +849,10 @@ export class SafetyMonitorService implements ISafetyMonitor {
     const byDay = new Map<string, RiskLevel>();
 
     for (const event of events) {
-      const day = event.timestamp.toISOString().split('T')[0];
+      const day = event.timestamp.toISOString().split('T')[0] ?? 'unknown';
       const riskLevel = this.severityToRisk(event.severity);
 
-      const currentMax = byDay.get(day) || 'none';
+      const currentMax = byDay.get(day) ?? 'none';
       if (this.compareRisk(riskLevel, currentMax) > 0) {
         byDay.set(day, riskLevel);
       }

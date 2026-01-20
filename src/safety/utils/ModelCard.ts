@@ -13,7 +13,7 @@
  * © БФ "Другой путь", 2025
  */
 
-import { IModelCard, IModelMetric, SafetyLevel } from '../interfaces/ISafetyEnvelope';
+import { IModelCard, IModelMetric } from '../interfaces/ISafetyEnvelope';
 import { CURRENT_SAFETY_LEVEL, EU_AI_ACT_CLASSIFICATION } from './SafetyLevels';
 
 // ============================================================================
