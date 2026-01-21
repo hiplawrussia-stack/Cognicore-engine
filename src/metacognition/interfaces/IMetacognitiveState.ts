@@ -201,12 +201,12 @@ export interface CASWorryRumination {
   /**
    * Detected worry/rumination episodes in conversation
    */
-  readonly detectedEpisodes: Array<{
+  readonly detectedEpisodes: {
     readonly text: string;
     readonly type: 'worry' | 'rumination';
     readonly timestamp: Date;
     readonly intensity: number;
-  }>;
+  }[];
 }
 
 /**

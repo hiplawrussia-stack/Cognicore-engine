@@ -18,14 +18,14 @@
  */
 
 import {
-  ISafetyInvariant,
-  ISafetyInvariantService,
-  ISafetyContext,
-  ISafetyValidationResult,
-  ISafetyViolation,
-  ISafetyRecommendation,
-  ISafetyAction,
-  SafetyInvariantCategory,
+  type ISafetyInvariant,
+  type ISafetyInvariantService,
+  type ISafetyContext,
+  type ISafetyValidationResult,
+  type ISafetyViolation,
+  type ISafetyRecommendation,
+  type ISafetyAction,
+  type SafetyInvariantCategory,
   generateSafetyId,
 } from '../interfaces/ISafetyEnvelope';
 

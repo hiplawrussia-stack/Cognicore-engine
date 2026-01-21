@@ -233,11 +233,11 @@ export interface IEmotionalState {
   trend: 'improving' | 'stable' | 'declining';
 
   /** Recent emotion history (last 10) */
-  recentEmotions: Array<{
+  recentEmotions: {
     emotion: EmotionType;
     timestamp: Date;
     intensity: number;
-  }>;
+  }[];
 }
 
 /**

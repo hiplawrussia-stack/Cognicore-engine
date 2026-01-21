@@ -22,36 +22,35 @@
  */
 
 import {
-  IInterventionOptimizer,
-  IIntervention,
-  IInterventionSelection,
-  IContextualFeatures,
-  IDecisionPoint,
-  IInterventionOutcome,
-  IRewardSignal,
-  IRewardShapingComponents,
-  IBanditArm,
-  IContextualBanditArm,
-  IUserInterventionProfile,
-  ICategoryStats,
-  IInterventionStats,
-  IOptimizerConfig,
-  IOptimizerState,
-  IGlobalStats,
-  IAlternativeIntervention,
-  ISelectionReasoning,
+  type IInterventionOptimizer,
+  type IIntervention,
+  type IInterventionSelection,
+  type IContextualFeatures,
+  type IDecisionPoint,
+  type IInterventionOutcome,
+  type IRewardSignal,
+  type IRewardShapingComponents,
+  type IBanditArm,
+  type IContextualBanditArm,
+  type IUserInterventionProfile,
+  type ICategoryStats,
+  type IInterventionStats,
+  type IOptimizerConfig,
+  type IOptimizerState,
+  type IGlobalStats,
+  type IAlternativeIntervention,
+  type ISelectionReasoning,
   DEFAULT_OPTIMIZER_CONFIG,
   INTERVENTION_CATEGORIES,
   TIME_OF_DAY_HOURS,
-  InterventionCategory,
-  DecisionPointType,
-  TimeOfDay,
-  CreateInterventionOptimizer,
+  type InterventionCategory,
+  type DecisionPointType,
+  type TimeOfDay,
+  type CreateInterventionOptimizer,
 } from './IInterventionOptimizer';
 
 import {
   generateShortSecureId,
-  secureRandom,
   secureRandomInt,
   betaSampleSecure,
   gaussianSecure,
@@ -111,7 +110,7 @@ function getCurrentTimeOfDay(hour: number): TimeOfDay {
 /**
  * Softmax function for probability distribution
  */
-function softmax(values: number[], temperature: number = 1.0): number[] {
+function softmax(values: number[], temperature = 1.0): number[] {
   const maxVal = Math.max(...values);
   const expValues = values.map(v => Math.exp((v - maxVal) / temperature));
   const sumExp = expValues.reduce((a, b) => a + b, 0);
@@ -145,7 +144,7 @@ export class InterventionOptimizer implements IInterventionOptimizer {
   private arms: Map<string, IBanditArm | IContextualBanditArm>;
   private userProfiles: Map<string, IUserInterventionProfile>;
   private decisionPoints: IDecisionPoint[];
-  private pendingOutcomes: Array<{ decisionPointId: string; expectedOutcomeTime: Date }>;
+  private pendingOutcomes: { decisionPointId: string; expectedOutcomeTime: Date }[];
   private globalStats: IGlobalStats;
   private crisisIntervention: IIntervention | null;
 
@@ -304,7 +303,7 @@ export class InterventionOptimizer implements IInterventionOptimizer {
     probability: number;
     alternatives: IAlternativeIntervention[];
   } {
-    const scores: Array<{ intervention: IIntervention; score: number }> = [];
+    const scores: { intervention: IIntervention; score: number }[] = [];
 
     for (const intervention of interventions) {
       let score: number;
@@ -333,7 +332,7 @@ export class InterventionOptimizer implements IInterventionOptimizer {
 
       // Add contextual bonus if enabled
       if (this.config.enableContextualBandit && this.isContextualArm(arm)) {
-        score += this.calculateContextualBonus(arm as IContextualBanditArm, context);
+        score += this.calculateContextualBonus(arm, context);
       }
 
       scores.push({ intervention, score });
@@ -434,7 +433,7 @@ export class InterventionOptimizer implements IInterventionOptimizer {
     const eligible = this.filterEligibleInterventions(availableInterventions, context, userProfile);
 
     // Score all eligible interventions
-    const scored: Array<{ intervention: IIntervention; score: number }> = [];
+    const scored: { intervention: IIntervention; score: number }[] = [];
 
     for (const intervention of eligible) {
       if (!this.arms.has(intervention.id)) {
@@ -447,7 +446,7 @@ export class InterventionOptimizer implements IInterventionOptimizer {
         : arm.meanReward;
 
       if (this.config.enableContextualBandit && this.isContextualArm(arm)) {
-        score += this.calculateContextualBonus(arm as IContextualBanditArm, context);
+        score += this.calculateContextualBonus(arm, context);
       }
 
       scored.push({ intervention, score });
@@ -691,7 +690,7 @@ export class InterventionOptimizer implements IInterventionOptimizer {
 
     // Update contextual features if applicable
     if (context && this.config.enableContextualBandit && this.isContextualArm(arm)) {
-      this.updateContextualArm(arm as IContextualBanditArm, context, rewardValue);
+      this.updateContextualArm(arm, context, rewardValue);
     }
 
     this.arms.set(interventionId, arm);
@@ -773,7 +772,7 @@ export class InterventionOptimizer implements IInterventionOptimizer {
     // Update each intervention
     for (const [interventionId, interventionOutcomes] of grouped) {
       const firstOutcome = interventionOutcomes[0];
-      if (!firstOutcome) continue;
+      if (!firstOutcome) {continue;}
 
       const decisionPoint = this.decisionPoints.find(
         dp => dp.id === firstOutcome.decisionPointId
@@ -1059,56 +1058,56 @@ export class InterventionOptimizer implements IInterventionOptimizer {
   ): IIntervention[] {
     return interventions.filter(intervention => {
       // Must be active
-      if (!intervention.isActive) return false;
+      if (!intervention.isActive) {return false;}
 
       // Check preconditions
       const pre = intervention.preconditions;
 
-      if (pre.minValence !== undefined && context.valence < pre.minValence) return false;
-      if (pre.maxValence !== undefined && context.valence > pre.maxValence) return false;
-      if (pre.minArousal !== undefined && context.arousal < pre.minArousal) return false;
-      if (pre.maxArousal !== undefined && context.arousal > pre.maxArousal) return false;
-      if (pre.minEnergy !== undefined && context.energyLevel < pre.minEnergy) return false;
+      if (pre.minValence !== undefined && context.valence < pre.minValence) {return false;}
+      if (pre.maxValence !== undefined && context.valence > pre.maxValence) {return false;}
+      if (pre.minArousal !== undefined && context.arousal < pre.minArousal) {return false;}
+      if (pre.maxArousal !== undefined && context.arousal > pre.maxArousal) {return false;}
+      if (pre.minEnergy !== undefined && context.energyLevel < pre.minEnergy) {return false;}
 
       // Check risk level
       if (pre.maxRiskLevel !== undefined) {
         const riskOrder = ['none', 'low', 'moderate', 'elevated', 'high', 'crisis'];
         const contextRiskIndex = Math.floor(context.riskLevel * 5);
         const maxRiskIndex = riskOrder.indexOf(pre.maxRiskLevel);
-        if (contextRiskIndex > maxRiskIndex) return false;
+        if (contextRiskIndex > maxRiskIndex) {return false;}
       }
 
       // Check time of day
       if (pre.allowedTimeOfDay && pre.allowedTimeOfDay.length > 0) {
         const currentTimeOfDay = getCurrentTimeOfDay(context.hourOfDay);
-        if (!pre.allowedTimeOfDay.includes(currentTimeOfDay)) return false;
+        if (!pre.allowedTimeOfDay.includes(currentTimeOfDay)) {return false;}
       }
 
       // Check session requirements
       if (pre.minSessionsCompleted !== undefined &&
-          context.sessionsTotalLifetime < pre.minSessionsCompleted) return false;
+          context.sessionsTotalLifetime < pre.minSessionsCompleted) {return false;}
 
       // Check contraindications
       const contra = intervention.contraindications;
 
-      if (contra.crisisState && context.riskLevel > 0.8) return false;
-      if (contra.userDeclined) return false;
+      if (contra.crisisState && context.riskLevel > 0.8) {return false;}
+      if (contra.userDeclined) {return false;}
 
       if (contra.maxDailyInterventions !== undefined) {
         const todayCount = this.countTodayInterventionsForCategory(
           userProfile.userId,
           intervention.category
         );
-        if (todayCount >= contra.maxDailyInterventions) return false;
+        if (todayCount >= contra.maxDailyInterventions) {return false;}
       }
 
       if (contra.minTimeSinceLastIntervention !== undefined && userProfile.lastInterventionAt) {
         const secondsSince = (Date.now() - userProfile.lastInterventionAt.getTime()) / 1000;
-        if (secondsSince < contra.minTimeSinceLastIntervention) return false;
+        if (secondsSince < contra.minTimeSinceLastIntervention) {return false;}
       }
 
       // Check user avoided categories
-      if (userProfile.avoidedCategories.includes(intervention.category)) return false;
+      if (userProfile.avoidedCategories.includes(intervention.category)) {return false;}
 
       return true;
     });
@@ -1390,7 +1389,7 @@ export class InterventionOptimizer implements IInterventionOptimizer {
    * Get average reward across all arms
    */
   private getAverageReward(): number {
-    if (this.arms.size === 0) return 0.5;
+    if (this.arms.size === 0) {return 0.5;}
 
     let totalReward = 0;
     let totalPulls = 0;
@@ -1425,7 +1424,7 @@ export class InterventionOptimizer implements IInterventionOptimizer {
    * Create alternatives from scores
    */
   private createAlternativesFromScores(
-    scores: Array<{ intervention: IIntervention; score: number }>,
+    scores: { intervention: IIntervention; score: number }[],
     selectedId: string
   ): IAlternativeIntervention[] {
     const topScore = scores[0]?.score ?? 0;
@@ -1445,7 +1444,7 @@ export class InterventionOptimizer implements IInterventionOptimizer {
    */
   private calculateSelectionConfidence(interventionId: string): number {
     const arm = this.arms.get(interventionId);
-    if (!arm || arm.pullCount === 0) return 0.5;
+    if (!arm || arm.pullCount === 0) {return 0.5;}
 
     // Confidence increases with pulls and decreases with variance
     const pullConfidence = 1 - Math.exp(-arm.pullCount / 10);
@@ -1531,11 +1530,11 @@ export class InterventionOptimizer implements IInterventionOptimizer {
     wasExploration: boolean,
     alternatives: IAlternativeIntervention[]
   ): ISelectionReasoning {
-    const influentialFeatures: Array<{
+    const influentialFeatures: {
       feature: string;
       value: number;
       influence: 'positive' | 'negative' | 'neutral';
-    }> = [];
+    }[] = [];
 
     // Determine influential features
     if (context.valence < 0) {

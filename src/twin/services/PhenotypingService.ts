@@ -19,10 +19,10 @@
  */
 
 import {
-  IPhenotypingObservation,
-  IPhenotypingProfile,
-  IDigitalPhenotypingService,
-  PhenotypingSource,
+  type IPhenotypingObservation,
+  type IPhenotypingProfile,
+  type IDigitalPhenotypingService,
+  type PhenotypingSource,
   generateTwinId,
 } from '../interfaces/IDigitalTwin';
 
@@ -309,7 +309,7 @@ export class PhenotypingService implements IDigitalPhenotypingService {
     const total = gpsObs.length || 1;
     for (const count of Array.from(locations.values())) {
       const p = count / total;
-      if (p > 0) entropy -= p * Math.log2(p);
+      if (p > 0) {entropy -= p * Math.log2(p);}
     }
     const maxEntropy = Math.log2(locations.size || 1);
     const normalizedEntropy = maxEntropy > 0 ? entropy / maxEntropy : 0.5;
@@ -317,7 +317,7 @@ export class PhenotypingService implements IDigitalPhenotypingService {
     // Calculate home time (assuming most frequent location is home)
     let maxCount = 0;
     for (const count of Array.from(locations.values())) {
-      if (count > maxCount) maxCount = count;
+      if (count > maxCount) {maxCount = count;}
     }
     const homeTime = total > 0 ? maxCount / total : 0.5;
 
@@ -333,8 +333,8 @@ export class PhenotypingService implements IDigitalPhenotypingService {
         const activity = typeof obs.rawValue === 'number' ? obs.rawValue : 0;
         const hourlyAct = hourlyActivity[hour];
         const hourlyCount = hourlyCounts[hour];
-        if (hourlyAct !== undefined) hourlyActivity[hour] = hourlyAct + activity;
-        if (hourlyCount !== undefined) hourlyCounts[hour] = hourlyCount + 1;
+        if (hourlyAct !== undefined) {hourlyActivity[hour] = hourlyAct + activity;}
+        if (hourlyCount !== undefined) {hourlyCounts[hour] = hourlyCount + 1;}
       }
 
       // Calculate coefficient of variation
@@ -383,15 +383,15 @@ export class PhenotypingService implements IDigitalPhenotypingService {
     let outgoing = 0;
     for (const obs of [...callObs, ...messageObs]) {
       const features = obs.processedFeatures;
-      if (features.get('direction') === 1) incoming++;
-      else outgoing++;
+      if (features.get('direction') === 1) {incoming++;}
+      else {outgoing++;}
     }
     const reciprocity = (incoming + outgoing) > 0
       ? Math.min(incoming, outgoing) / Math.max(incoming, outgoing)
       : 0.5;
 
     // Calculate response latency (from message timestamps)
-    let responseLatency = REFERENCE_VALUES.social.normalResponseLatency;
+    const responseLatency = REFERENCE_VALUES.social.normalResponseLatency;
     // In real implementation, would calculate from actual response times
 
     return {
@@ -440,7 +440,7 @@ export class PhenotypingService implements IDigitalPhenotypingService {
     for (const obs of sleepObs) {
       const features = obs.processedFeatures;
       const midpoint = features.get('midpoint');
-      if (midpoint !== undefined) midpoints.push(midpoint);
+      if (midpoint !== undefined) {midpoints.push(midpoint);}
     }
     const avgMidpoint = midpoints.length > 0
       ? midpoints.reduce((a, b) => a + b, 0) / midpoints.length
@@ -478,7 +478,7 @@ export class PhenotypingService implements IDigitalPhenotypingService {
       pickups++;
 
       const hour = obs.timestamp.getHours();
-      if (hour >= 0 && hour < 6) nightObs++;
+      if (hour >= 0 && hour < 6) {nightObs++;}
       totalObs++;
     }
 
@@ -719,10 +719,10 @@ export class PhenotypingService implements IDigitalPhenotypingService {
 
     // Time of day
     const hour = now.getHours();
-    if (hour >= 6 && hour < 12) tags.push('morning');
-    else if (hour >= 12 && hour < 17) tags.push('afternoon');
-    else if (hour >= 17 && hour < 21) tags.push('evening');
-    else tags.push('night');
+    if (hour >= 6 && hour < 12) {tags.push('morning');}
+    else if (hour >= 12 && hour < 17) {tags.push('afternoon');}
+    else if (hour >= 17 && hour < 21) {tags.push('evening');}
+    else {tags.push('night');}
 
     return tags;
   }
@@ -735,7 +735,7 @@ export class PhenotypingService implements IDigitalPhenotypingService {
   }
 
   private calculateDaySpan(observations: IPhenotypingObservation[]): number {
-    if (observations.length === 0) return 0;
+    if (observations.length === 0) {return 0;}
 
     const timestamps = observations.map(o => o.timestamp.getTime());
     const minTime = Math.min(...timestamps);

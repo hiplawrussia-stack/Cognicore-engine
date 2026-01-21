@@ -35,7 +35,7 @@ import type { CognitiveDistortionType } from '../../state/interfaces/ICognitiveS
 /**
  * Create a mock Prior
  */
-function createMockPrior(mean: number = 0.5, variance: number = 0.1): Prior {
+function createMockPrior(mean = 0.5, variance = 0.1): Prior {
   return {
     mean,
     variance,
@@ -47,7 +47,7 @@ function createMockPrior(mean: number = 0.5, variance: number = 0.1): Prior {
 /**
  * Create a mock Posterior
  */
-function createMockPosterior(mean: number = 0.5, variance: number = 0.1): Posterior {
+function createMockPosterior(mean = 0.5, variance = 0.1): Posterior {
   return {
     mean,
     variance,
@@ -65,8 +65,8 @@ function createMockPosterior(mean: number = 0.5, variance: number = 0.1): Poster
  */
 function createMockDimensionBelief(
   dimension: string,
-  mean: number = 0.5,
-  variance: number = 0.1
+  mean = 0.5,
+  variance = 0.1
 ): DimensionBelief {
   return {
     dimension,

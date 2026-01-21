@@ -200,7 +200,7 @@ export interface IInterventionDeliveredEvent extends IDomainEvent {
     deliveredAt: Date;
     content: {
       text: string;
-      buttons?: Array<{ label: string; callbackData: string }>;
+      buttons?: { label: string; callbackData: string }[];
     };
   };
 }
@@ -524,7 +524,7 @@ export interface IStateRepository {
   getStateHistory(
     userId: string,
     limit?: number
-  ): Promise<Array<{ state: IStateVector; timestamp: Date }>>;
+  ): Promise<{ state: IStateVector; timestamp: Date }[]>;
 
   /**
    * Delete user data (GDPR right to erasure)
@@ -602,7 +602,7 @@ export interface IUserStateQuery {
   includePredictions?: boolean;
 
   /** Prediction horizons */
-  predictionHorizons?: Array<'6h' | '12h' | '24h' | '72h' | '1w'>;
+  predictionHorizons?: ('6h' | '12h' | '24h' | '72h' | '1w')[];
 }
 
 /**
@@ -619,7 +619,7 @@ export interface IUserStateResult {
   currentBelief: IFullBeliefState;
 
   /** State history if requested */
-  history?: Array<{ state: IStateVector; timestamp: Date }>;
+  history?: { state: IStateVector; timestamp: Date }[];
 
   /** Predictions if requested */
   predictions?: Record<string, TemporalPrediction>;
@@ -656,13 +656,13 @@ export interface IInterventionHistoryResult {
   total: number;
 
   /** Interventions */
-  interventions: Array<{
+  interventions: {
     interventionId: string;
     category: string;
     deliveredAt: Date;
     outcome?: IInterventionOutcome;
     reward?: number;
-  }>;
+  }[];
 
   /** Statistics */
   statistics: {
@@ -820,7 +820,7 @@ export interface IResponseSuggestion {
   /** Content */
   content: {
     text: string;
-    buttons?: Array<{ label: string; callbackData: string }>;
+    buttons?: { label: string; callbackData: string }[];
   };
 
   /** Rationale */
@@ -932,7 +932,7 @@ export interface ICognitiveCoreAPI {
    */
   getPredictions(
     userId: string,
-    horizons?: Array<'6h' | '12h' | '24h' | '72h' | '1w'>
+    horizons?: ('6h' | '12h' | '24h' | '72h' | '1w')[]
   ): Promise<ICognitiveCoreResponse<Record<string, TemporalPrediction>>>;
 
   /**
@@ -1059,7 +1059,7 @@ export interface ICognitiveCoreAPI {
   ): Promise<ICognitiveCoreResponse<{
     states: IStateVector[];
     sessions: IUserSession[];
-    interventions: Array<{ intervention: IIntervention; outcome?: IInterventionOutcome }>;
+    interventions: { intervention: IIntervention; outcome?: IInterventionOutcome }[];
     events: IDomainEvent[];
   }>>;
 

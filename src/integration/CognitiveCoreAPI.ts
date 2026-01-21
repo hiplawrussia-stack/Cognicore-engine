@@ -20,37 +20,37 @@
  */
 
 import {
-  ICognitiveCoreAPI,
-  ICognitiveCoreConfig,
-  ICognitiveCoreResponse,
-  IUserSession,
-  ISessionContext,
-  IProcessMessageCommand,
-  IRecordObservationCommand,
-  IRequestInterventionCommand,
-  IRecordOutcomeCommand,
-  IUserStateQuery,
-  IUserStateResult,
-  IInterventionHistoryQuery,
-  IInterventionHistoryResult,
-  IMessageProcessingResult,
-  IResponseSuggestion,
-  IDomainEvent,
-  IEventMetadata,
-  IEventBus,
-  IEventSubscription,
-  IEventStore,
-  IStateRepository,
-  ISessionRepository,
-  EventHandler,
-  IStateUpdatedEvent,
-  IBeliefUpdatedEvent,
-  TextAnalysisResultCompletedEvent,
-  IInterventionSelectedEvent,
-  ICrisisDetectedEvent,
-  IMessageReceivedEvent,
+  type ICognitiveCoreAPI,
+  type ICognitiveCoreConfig,
+  type ICognitiveCoreResponse,
+  type IUserSession,
+  type ISessionContext,
+  type IProcessMessageCommand,
+  type IRecordObservationCommand,
+  type IRequestInterventionCommand,
+  type IRecordOutcomeCommand,
+  type IUserStateQuery,
+  type IUserStateResult,
+  type IInterventionHistoryQuery,
+  type IInterventionHistoryResult,
+  type IMessageProcessingResult,
+  type IResponseSuggestion,
+  type IDomainEvent,
+  type IEventMetadata,
+  type IEventBus,
+  type IEventSubscription,
+  type IEventStore,
+  type IStateRepository,
+  type ISessionRepository,
+  type EventHandler,
+  type IStateUpdatedEvent,
+  type IBeliefUpdatedEvent,
+  type TextAnalysisResultCompletedEvent,
+  type IInterventionSelectedEvent,
+  type ICrisisDetectedEvent,
+  type IMessageReceivedEvent,
   DEFAULT_COGNITIVE_CORE_CONFIG,
-  CreateCognitiveCoreAPI,
+  type CreateCognitiveCoreAPI,
 } from './ICognitiveCoreAPI';
 
 // Direct imports following 2024-2025 best practices (avoid barrel re-exports)
@@ -81,7 +81,7 @@ import type {
 } from '../intervention/IInterventionOptimizer';
 
 import {
-  CrisisDetector,
+  type CrisisDetector,
   createCrisisDetector,
 } from '../crisis/CrisisDetector';
 import type { StateRiskData } from '../crisis/CrisisDetector';
@@ -189,7 +189,7 @@ function getCategoryRisk(
   category: string
 ): number {
   const categoryRisk = riskState.categoryRisks?.[category];
-  if (!categoryRisk) return 0.0;
+  if (!categoryRisk) {return 0.0;}
   return riskLevelToNumber(categoryRisk.level as 'none' | 'low' | 'medium' | 'high' | 'critical');
 }
 
@@ -201,7 +201,7 @@ function getCategoryRisk(
  * In-memory event bus implementation
  */
 class InMemoryEventBus implements IEventBus {
-  private subscriptions: Map<string, Map<string, EventHandler>> = new Map();
+  private subscriptions = new Map<string, Map<string, EventHandler>>();
   private subscriptionCounter = 0;
 
   async publish<T extends IDomainEvent>(event: T): Promise<void> {
@@ -243,7 +243,7 @@ class InMemoryEventBus implements IEventBus {
       id: subscriptionId,
       eventType,
       handler: handler as EventHandler,
-      unsubscribe: () => this.unsubscribe(subscriptionId),
+      unsubscribe: () => { this.unsubscribe(subscriptionId); },
     };
   }
 
@@ -276,11 +276,11 @@ class InMemoryEventBus implements IEventBus {
  * In-memory event store implementation
  */
 class InMemoryEventStore implements IEventStore {
-  private streams: Map<string, IDomainEvent[]> = new Map();
+  private streams = new Map<string, IDomainEvent[]>();
   private eventBus: IEventBus;
   private maxEvents: number;
 
-  constructor(eventBus: IEventBus, maxEvents: number = 10000) {
+  constructor(eventBus: IEventBus, maxEvents = 10000) {
     this.eventBus = eventBus;
     this.maxEvents = maxEvents;
   }
@@ -320,7 +320,7 @@ class InMemoryEventStore implements IEventStore {
   ): Promise<void> {
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
-      if (!event) continue;
+      if (!event) {continue;}
       const version = expectedVersion !== undefined ? expectedVersion + i : undefined;
       await this.append(streamId, event, version);
     }
@@ -328,7 +328,7 @@ class InMemoryEventStore implements IEventStore {
 
   async readStream(
     streamId: string,
-    fromVersion: number = 0,
+    fromVersion = 0,
     count?: number
   ): Promise<IDomainEvent[]> {
     const stream = this.streams.get(streamId) || [];
@@ -345,9 +345,9 @@ class InMemoryEventStore implements IEventStore {
 
     for (const stream of this.streams.values()) {
       for (const event of stream) {
-        if (event.eventType !== eventType) continue;
-        if (fromTimestamp && event.timestamp < fromTimestamp) continue;
-        if (toTimestamp && event.timestamp > toTimestamp) continue;
+        if (event.eventType !== eventType) {continue;}
+        if (fromTimestamp && event.timestamp < fromTimestamp) {continue;}
+        if (toTimestamp && event.timestamp > toTimestamp) {continue;}
         result.push(event);
       }
     }
@@ -381,9 +381,9 @@ class InMemoryEventStore implements IEventStore {
  * In-memory state repository
  */
 class InMemoryStateRepository implements IStateRepository {
-  private states: Map<string, IStateVector> = new Map();
-  private beliefs: Map<string, IFullBeliefState> = new Map();
-  private history: Map<string, Array<{ state: IStateVector; timestamp: Date }>> = new Map();
+  private states = new Map<string, IStateVector>();
+  private beliefs = new Map<string, IFullBeliefState>();
+  private history = new Map<string, { state: IStateVector; timestamp: Date }[]>();
 
   async getState(userId: string): Promise<IStateVector | null> {
     return this.states.get(userId) || null;
@@ -415,8 +415,8 @@ class InMemoryStateRepository implements IStateRepository {
 
   async getStateHistory(
     userId: string,
-    limit: number = 50
-  ): Promise<Array<{ state: IStateVector; timestamp: Date }>> {
+    limit = 50
+  ): Promise<{ state: IStateVector; timestamp: Date }[]> {
     const hist = this.history.get(userId) || [];
     return hist.slice(-limit);
   }
@@ -436,8 +436,8 @@ class InMemoryStateRepository implements IStateRepository {
  * In-memory session repository
  */
 class InMemorySessionRepository implements ISessionRepository {
-  private sessions: Map<string, IUserSession> = new Map();
-  private userActiveSessions: Map<string, string> = new Map();
+  private sessions = new Map<string, IUserSession>();
+  private userActiveSessions = new Map<string, string>();
 
   async create(session: IUserSession): Promise<void> {
     this.sessions.set(session.sessionId, session);
@@ -454,10 +454,10 @@ class InMemorySessionRepository implements ISessionRepository {
 
   async getActiveSession(userId: string): Promise<IUserSession | null> {
     const sessionId = this.userActiveSessions.get(userId);
-    if (!sessionId) return null;
+    if (!sessionId) {return null;}
 
     const session = this.sessions.get(sessionId);
-    if (!session || session.status !== 'active') {
+    if (session?.status !== 'active') {
       this.userActiveSessions.delete(userId);
       return null;
     }
@@ -477,7 +477,7 @@ class InMemorySessionRepository implements ISessionRepository {
     }
   }
 
-  async getSessionHistory(userId: string, limit: number = 10): Promise<IUserSession[]> {
+  async getSessionHistory(userId: string, limit = 10): Promise<IUserSession[]> {
     const userSessions: IUserSession[] = [];
 
     for (const session of this.sessions.values()) {
@@ -522,8 +522,8 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
   private voiceAdapter: IVoiceInputAdapter;
 
   // Phase 1 state tracking (per-user PLRNN/KalmanFormer states)
-  private userPLRNNStates: Map<string, IPLRNNState> = new Map();
-  private userKalmanFormerStates: Map<string, IKalmanFormerState> = new Map();
+  private userPLRNNStates = new Map<string, IPLRNNState>();
+  private userKalmanFormerStates = new Map<string, IKalmanFormerState>();
 
   // Intervention library
   private interventions: IIntervention[] = [];
@@ -1261,7 +1261,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
    */
   async getHybridPrediction(
     userId: string,
-    hoursAhead: number = 24
+    hoursAhead = 24
   ): Promise<ICognitiveCoreResponse<IHybridPrediction>> {
     const startTime = Date.now();
 
@@ -1421,7 +1421,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
 
   async getPredictions(
     userId: string,
-    horizons: Array<'6h' | '12h' | '24h' | '72h' | '1w'> = ['24h']
+    horizons: ('6h' | '12h' | '24h' | '72h' | '1w')[] = ['24h']
   ): Promise<ICognitiveCoreResponse<Record<string, ITemporalPrediction>>> {
     const startTime = Date.now();
 
@@ -1569,13 +1569,13 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
     try {
       const profile = await this.interventionOptimizer.getUserProfile(query.userId);
 
-      const interventions: Array<{
+      const interventions: {
         interventionId: string;
         category: string;
         deliveredAt: Date;
         outcome?: IInterventionOutcome;
         reward?: number;
-      }> = [];
+      }[] = [];
 
       for (const [interventionId, stats] of Object.entries(profile.interventionStats)) {
         const intervention = await this.interventionOptimizer.getIntervention(interventionId);
@@ -1676,7 +1676,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
 
   async generateSocraticQuestions(
     userId: string,
-    count: number = 3
+    count = 3
   ): Promise<ICognitiveCoreResponse<SocraticQuestion[]>> {
     const startTime = Date.now();
 
@@ -1763,8 +1763,8 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
       const indicators: string[] = [];
 
       // Check category risks
-      const suicidalRisk = currentState.risk.categoryRisks?.['suicidal_ideation'];
-      const selfHarmRisk = currentState.risk.categoryRisks?.['self_harm'];
+      const suicidalRisk = currentState.risk.categoryRisks?.suicidal_ideation;
+      const selfHarmRisk = currentState.risk.categoryRisks?.self_harm;
 
       if (suicidalRisk && riskLevelMap[suicidalRisk.level] > 0.3) {
         indicators.push('suicidal_ideation');
@@ -1772,8 +1772,8 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
       if (selfHarmRisk && riskLevelMap[selfHarmRisk.level] > 0.3) {
         indicators.push('self_harm_risk');
       }
-      if (currentState.emotional.arousal > 0.8) indicators.push('high_arousal');
-      if (currentState.emotional.valence < -0.7) indicators.push('very_negative_mood');
+      if (currentState.emotional.arousal > 0.8) {indicators.push('high_arousal');}
+      if (currentState.emotional.valence < -0.7) {indicators.push('very_negative_mood');}
 
       const recommendedAction = isCrisis
         ? 'immediate_intervention'
@@ -1846,7 +1846,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
   ): Promise<ICognitiveCoreResponse<{
     states: IStateVector[];
     sessions: IUserSession[];
-    interventions: Array<{ intervention: IIntervention; outcome?: IInterventionOutcome }>;
+    interventions: { intervention: IIntervention; outcome?: IInterventionOutcome }[];
     events: IDomainEvent[];
   }>> {
     const startTime = Date.now();
@@ -1951,16 +1951,16 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
 
     // Estimate valence from analysis
     let valence = 0;
-    if (hasNegativeEmotion) valence -= 0.3;
-    if (hasPositiveEmotion) valence += 0.3;
-    if (allDistortions.length > 0) valence -= 0.1 * allDistortions.length;
+    if (hasNegativeEmotion) {valence -= 0.3;}
+    if (hasPositiveEmotion) {valence += 0.3;}
+    if (allDistortions.length > 0) {valence -= 0.1 * allDistortions.length;}
 
     // Estimate arousal from punctuation and caps
     const hasExclamation = text.includes('!');
     const hasCaps = text.toUpperCase() === text && text.length > 3;
     let arousal = 0.5;
-    if (hasExclamation) arousal += 0.1;
-    if (hasCaps) arousal += 0.2;
+    if (hasExclamation) {arousal += 0.1;}
+    if (hasCaps) {arousal += 0.2;}
 
     // Check for crisis indicators
     const crisisIndicators = this.extractCrisisIndicators(analysis);
@@ -1996,22 +1996,22 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
   private calculateStateChanges(
     previousState: IStateVector,
     newState: IStateVector
-  ): Array<{
+  ): {
     dimension: 'emotional' | 'cognitive' | 'narrative' | 'risk' | 'resource';
     field: string;
     previousValue: unknown;
     newValue: unknown;
     changeType: 'increase' | 'decrease' | 'transition';
     magnitude: number;
-  }> {
-    const changes: Array<{
+  }[] {
+    const changes: {
       dimension: 'emotional' | 'cognitive' | 'narrative' | 'risk' | 'resource';
       field: string;
       previousValue: unknown;
       newValue: unknown;
       changeType: 'increase' | 'decrease' | 'transition';
       magnitude: number;
-    }> = [];
+    }[] = [];
 
     // Check emotional changes
     const valenceDiff = newState.emotional.valence - previousState.emotional.valence;
@@ -2084,10 +2084,10 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
    */
   private checkCrisis(analysis: TextAnalysisResult, state: IStateVector): boolean {
     const crisisIndicators = this.extractCrisisIndicators(analysis);
-    if (crisisIndicators.length > 0) return true;
-    if (state.risk.overallRiskLevel > 0.7) return true;
-    if (state.risk.suicidalIdeation > 0.5) return true;
-    if (state.risk.selfHarmRisk > 0.5) return true;
+    if (crisisIndicators.length > 0) {return true;}
+    if (state.risk.overallRiskLevel > 0.7) {return true;}
+    if (state.risk.suicidalIdeation > 0.5) {return true;}
+    if (state.risk.selfHarmRisk > 0.5) {return true;}
     return false;
   }
 
@@ -2097,7 +2097,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
   private async generateInsightsFromAnalysis(
     analysis: TextAnalysisResult,
     state: IStateVector,
-    allDistortions?: Array<{ type: string }>
+    allDistortions?: { type: string }[]
   ): Promise<ITherapeuticInsight[]> {
     const insights: ITherapeuticInsight[] = [];
 
@@ -2111,7 +2111,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
         currentChain: analysis.chains[0],
         insightType: 'pattern_observation',
       });
-      if (insight) insights.push(insight);
+      if (insight) {insights.push(insight);}
     }
 
     return insights;

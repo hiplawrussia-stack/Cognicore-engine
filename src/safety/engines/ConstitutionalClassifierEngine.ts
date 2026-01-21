@@ -18,12 +18,12 @@
  */
 
 import {
-  IConstitutionalPrinciple,
-  IConstitutionalClassification,
-  IConstitutionalClassifierService,
-  IInputClassification,
-  IOutputClassification,
-  ISafetyContext,
+  type IConstitutionalPrinciple,
+  type IConstitutionalClassification,
+  type IConstitutionalClassifierService,
+  type IInputClassification,
+  type IOutputClassification,
+  type ISafetyContext,
 } from '../interfaces/ISafetyEnvelope';
 
 // ============================================================================
@@ -840,7 +840,7 @@ export class ConstitutionalClassifierEngine implements IConstitutionalClassifier
 
     for (const principleId of violatedPrinciples) {
       const principle = this.principles.find(p => p.id === principleId);
-      if (!principle) continue;
+      if (!principle) {continue;}
 
       switch (principle.category) {
         case 'clinical':

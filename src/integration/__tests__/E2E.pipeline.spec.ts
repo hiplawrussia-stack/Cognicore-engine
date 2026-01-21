@@ -20,23 +20,23 @@
  */
 
 import {
-  VoiceInputAdapter,
+  type VoiceInputAdapter,
   createVoiceInputAdapter,
   DEFAULT_VOICE_CONFIG,
 } from '../../voice/VoiceInputAdapter';
 import type { IVoiceAnalysisResult, IMultimodalResult } from '../../voice/interfaces/IVoiceAdapter';
 
-import { CognitiveCoreAPI, createCognitiveCoreAPI } from '../CognitiveCoreAPI';
+import { type CognitiveCoreAPI, createCognitiveCoreAPI } from '../CognitiveCoreAPI';
 import type { IMessageProcessingResult } from '../ICognitiveCoreAPI';
 
 import {
-  TemporalEchoEngine,
+  type TemporalEchoEngine,
   createTemporalEchoEngine,
 } from '../../temporal/TemporalEchoEngine';
 import type { StateTrajectory, PredictionPoint } from '../../temporal/ITemporalPrediction';
 
 import {
-  BeliefUpdateEngine,
+  type BeliefUpdateEngine,
   createBeliefUpdateEngine,
 } from '../../belief/BeliefUpdateEngine';
 import type { BeliefState, Observation } from '../../belief/IBeliefUpdate';
@@ -53,7 +53,7 @@ import type { IStateVector } from '../../state/interfaces/IStateVector';
  */
 function generateEmotionalAudio(
   emotionType: 'neutral' | 'stressed' | 'depressed' | 'anxious' | 'happy',
-  durationSec: number = 0.5
+  durationSec = 0.5
 ): Float32Array {
   const sampleRate = DEFAULT_VOICE_CONFIG.sampleRate;
   const numSamples = Math.floor(sampleRate * durationSec);
@@ -188,7 +188,7 @@ function generateStateHistory(
  * Metrics calculation utilities
  */
 function calculateMAE(values1: number[], values2: number[]): number {
-  if (values1.length !== values2.length || values1.length === 0) return NaN;
+  if (values1.length !== values2.length || values1.length === 0) {return NaN;}
   return values1.reduce((sum, v, i) => sum + Math.abs(v - values2[i]), 0) / values1.length;
 }
 
@@ -703,7 +703,7 @@ describe('E2E Pipeline Integration Tests', () => {
 
     it('should handle concurrent sessions', async () => {
       const userIds = Array.from({ length: 5 }, (_, i) => `e2e-concurrent-${Date.now()}-${i}`);
-      const sessions: Array<{ userId: string; sessionId: string }> = [];
+      const sessions: { userId: string; sessionId: string }[] = [];
 
       // Start all sessions concurrently
       const startPromises = userIds.map(userId => cognitiveAPI.startSession(userId, 'api'));

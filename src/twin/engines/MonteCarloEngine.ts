@@ -19,18 +19,18 @@
  */
 
 import {
-  IDigitalTwinState,
-  IScenario,
-  IScenarioResult,
-  IScenarioComparison,
-  ISimulatedTrajectory,
-  ITrajectoryEvent,
-  ITwinSimulatorService,
-  ITwinPersonalization,
-  ISimulationConfig,
+  type IDigitalTwinState,
+  type IScenario,
+  type IScenarioResult,
+  type IScenarioComparison,
+  type ISimulatedTrajectory,
+  type ITrajectoryEvent,
+  type ITwinSimulatorService,
+  type ITwinPersonalization,
+  type ISimulationConfig,
   DEFAULT_SIMULATION_CONFIG,
-  ScenarioOutcome,
-  IClinicalInterpretation,
+  type ScenarioOutcome,
+  type IClinicalInterpretation,
   generateTwinId,
 } from '../interfaces/IDigitalTwin';
 
@@ -536,7 +536,7 @@ export class MonteCarloEngine implements ITwinSimulatorService {
       const day = step * this.config.timeStepDays;
       timepoints.push(day);
 
-      if (step === 0) continue;
+      if (step === 0) {continue;}
 
       for (const [varId, values] of Array.from(states)) {
         const prevValue = values[values.length - 1] ?? 0.5;
@@ -731,11 +731,11 @@ export class MonteCarloEngine implements ITwinSimulatorService {
     const finalDistress = this.calculateOverallDistress(states, this.getLastIndex(states));
     const initialDistress = this.calculateOverallDistress(states, 0);
 
-    if (finalDistress > OUTCOME_THRESHOLDS.crisis) return 'crisis';
-    if (finalDistress < OUTCOME_THRESHOLDS.remission) return 'remission';
-    if (finalDistress < OUTCOME_THRESHOLDS.recovery) return 'recovery';
-    if (finalDistress < initialDistress - 0.15) return 'improvement';
-    if (finalDistress > initialDistress + 0.15) return 'deterioration';
+    if (finalDistress > OUTCOME_THRESHOLDS.crisis) {return 'crisis';}
+    if (finalDistress < OUTCOME_THRESHOLDS.remission) {return 'remission';}
+    if (finalDistress < OUTCOME_THRESHOLDS.recovery) {return 'recovery';}
+    if (finalDistress < initialDistress - 0.15) {return 'improvement';}
+    if (finalDistress > initialDistress + 0.15) {return 'deterioration';}
     return 'stable';
   }
 
@@ -746,7 +746,7 @@ export class MonteCarloEngine implements ITwinSimulatorService {
 
     for (const varId of distressVars) {
       const values = states.get(varId);
-      if (values && values[index] !== undefined) {
+      if (values?.[index] !== undefined) {
         sum += values[index];
         count++;
       }
@@ -770,7 +770,7 @@ export class MonteCarloEngine implements ITwinSimulatorService {
     const bestCase = new Map<string, number>();
 
     const firstTraj = trajectories[0];
-    if (!firstTraj) return { expected, worstCase, bestCase };
+    if (!firstTraj) {return { expected, worstCase, bestCase };}
 
     for (const varId of Array.from(firstTraj.states.keys())) {
       const finalValues: number[] = [];
@@ -892,8 +892,8 @@ export class MonteCarloEngine implements ITwinSimulatorService {
   private analyzeKeyDrivers(
     trajectories: ISimulatedTrajectory[],
     _twin: IDigitalTwinState
-  ): Array<{ variable: string; contribution: number; direction: 'positive' | 'negative' }> {
-    const contributions: Map<string, number> = new Map();
+  ): { variable: string; contribution: number; direction: 'positive' | 'negative' }[] {
+    const contributions = new Map<string, number>();
 
     const expectedTraj = this.calculateExpectedTrajectory(trajectories);
 
@@ -914,7 +914,7 @@ export class MonteCarloEngine implements ITwinSimulatorService {
         const finalVal = values[values.length - 1] ?? 0;
         const initialVal = values[0] ?? 0;
         const direction = finalVal > initialVal ? 'positive' : 'negative';
-        return { variable, contribution, direction: direction as 'positive' | 'negative' };
+        return { variable, contribution, direction: direction };
       });
 
     return sorted;
@@ -966,12 +966,12 @@ export class MonteCarloEngine implements ITwinSimulatorService {
 
     const diff = improvementA - improvementB;
 
-    if (Math.abs(diff) < 0.01) return null;
+    if (Math.abs(diff) < 0.01) {return null;}
     return Math.abs(1 / diff);
   }
 
   private calculateRelativeRiskReduction(riskA: number, riskB: number): number {
-    if (riskB === 0) return riskA > 0 ? -1 : 0;
+    if (riskB === 0) {return riskA > 0 ? -1 : 0;}
     return (riskB - riskA) / riskB;
   }
 
@@ -980,9 +980,9 @@ export class MonteCarloEngine implements ITwinSimulatorService {
     const timeA = resultA.expectedTimeToCrisis;
     const timeB = resultB.expectedTimeToCrisis;
 
-    if (timeA === null && timeB === null) return 1;
-    if (timeA === null) return 0.5;  // A is better (no crisis)
-    if (timeB === null) return 2;    // B is better
+    if (timeA === null && timeB === null) {return 1;}
+    if (timeA === null) {return 0.5;}  // A is better (no crisis)
+    if (timeB === null) {return 2;}    // B is better
 
     return timeB / timeA;
   }
@@ -991,9 +991,9 @@ export class MonteCarloEngine implements ITwinSimulatorService {
     const timeA = resultA.expectedTimeToImprovement;
     const timeB = resultB.expectedTimeToImprovement;
 
-    if (timeA === null && timeB === null) return 0;
-    if (timeA === null) return -30;
-    if (timeB === null) return 30;
+    if (timeA === null && timeB === null) {return 0;}
+    if (timeA === null) {return -30;}
+    if (timeB === null) {return 30;}
 
     return timeB - timeA;
   }
@@ -1010,7 +1010,7 @@ export class MonteCarloEngine implements ITwinSimulatorService {
       let sum = 0;
       for (const varId of distressVars) {
         const vals = traj.states.get(varId);
-        if (vals && vals.length > 0) sum += vals[vals.length - 1] ?? 0;
+        if (vals && vals.length > 0) {sum += vals[vals.length - 1] ?? 0;}
       }
       valuesA.push(sum / distressVars.length);
     }
@@ -1019,7 +1019,7 @@ export class MonteCarloEngine implements ITwinSimulatorService {
       let sum = 0;
       for (const varId of distressVars) {
         const vals = traj.states.get(varId);
-        if (vals && vals.length > 0) sum += vals[vals.length - 1] ?? 0;
+        if (vals && vals.length > 0) {sum += vals[vals.length - 1] ?? 0;}
       }
       valuesB.push(sum / distressVars.length);
     }
@@ -1132,7 +1132,7 @@ export class MonteCarloEngine implements ITwinSimulatorService {
   // ==========================================================================
 
   private createRng(seed?: number): () => number {
-    if (seed === undefined) return Math.random;
+    if (seed === undefined) {return Math.random;}
 
     let s = seed;
     return () => {
@@ -1164,7 +1164,7 @@ export class MonteCarloEngine implements ITwinSimulatorService {
   }
 
   private percentile(values: number[], p: number): number {
-    if (values.length === 0) return 0;
+    if (values.length === 0) {return 0;}
     const sorted = [...values].sort((a, b) => a - b);
     const index = Math.floor((p / 100) * sorted.length);
     return sorted[Math.min(index, sorted.length - 1)] ?? 0;

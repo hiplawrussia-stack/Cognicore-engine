@@ -154,7 +154,7 @@ class DefaultTransitionModel implements TransitionModel {
       dimensions += 1;
     }
 
-    if (dimensions === 0) return 0.5;
+    if (dimensions === 0) {return 0.5;}
 
     const avgDistance = Math.sqrt(totalDistance / dimensions);
 
@@ -212,10 +212,10 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
   private readonly _transitionModel: TransitionModel;
 
   // History storage for belief tracking
-  private readonly beliefHistory: Map<string | number, Array<{
+  private readonly beliefHistory = new Map<string | number, {
     timestamp: Date;
     belief: IFullBeliefState;
-  }>> = new Map();
+  }[]>();
 
   constructor(
     config?: Partial<BeliefEngineConfig>,
@@ -258,7 +258,7 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
       basedOnObservations: 0,
     };
 
-    const createDimensionBelief = (dimension: string, meanValue: number = 0.5): DimensionBelief => ({
+    const createDimensionBelief = (dimension: string, meanValue = 0.5): DimensionBelief => ({
       dimension,
       prior: { ...defaultPrior, mean: meanValue },
       posterior: { ...defaultPosterior, mean: meanValue },
@@ -479,7 +479,7 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
     let belief = currentBelief;
     let lastResult: BeliefUpdateResult | null = null;
 
-    const allUpdatedDimensions: Set<string> = new Set();
+    const allUpdatedDimensions = new Set<string>();
     const allSignificantChanges: BeliefUpdateResult['significantChanges'] = [];
     let totalInfoGain = 0;
     let totalSurprise = 0;
@@ -528,10 +528,10 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
     // Determine risk level from posterior
     const riskValue = belief.risk.overallRisk.posterior.mean;
     let riskLevel: RiskLevel = 'none';
-    if (riskValue >= 0.8) riskLevel = 'critical';
-    else if (riskValue >= 0.6) riskLevel = 'high';
-    else if (riskValue >= 0.4) riskLevel = 'medium';
-    else if (riskValue >= 0.2) riskLevel = 'low';
+    if (riskValue >= 0.8) {riskLevel = 'critical';}
+    else if (riskValue >= 0.6) {riskLevel = 'high';}
+    else if (riskValue >= 0.4) {riskLevel = 'medium';}
+    else if (riskValue >= 0.2) {riskLevel = 'low';}
 
     // Build StateVector (simplified)
     return {
@@ -879,7 +879,7 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
 
     for (const dim of informedDimensions) {
       const dimBelief = this.findDimensionBelief(currentBelief, dim);
-      if (!dimBelief) continue;
+      if (!dimBelief) {continue;}
 
       // Expected variance reduction
       const currentVariance = dimBelief.posterior.variance;
@@ -957,19 +957,19 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
    */
   checkBeliefConsistency(belief: IFullBeliefState): {
     isConsistent: boolean;
-    inconsistencies: Array<{
+    inconsistencies: {
       dimension1: string;
       dimension2: string;
       conflictType: string;
       resolution: string;
-    }>;
+    }[];
   } {
-    const inconsistencies: Array<{
+    const inconsistencies: {
       dimension1: string;
       dimension2: string;
       conflictType: string;
       resolution: string;
-    }> = [];
+    }[] = [];
 
     // Check emotional consistency
     // High arousal + low energy is inconsistent
@@ -1111,11 +1111,11 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
     userId: string | number,
     dimension: string,
     timeRange: { start: Date; end: Date }
-  ): Promise<Array<{
+  ): Promise<{
     timestamp: Date;
     mean: number;
     variance: number;
-  }>> {
+  }[]> {
     const history = this.beliefHistory.get(userId) ?? [];
 
     return history
@@ -1161,10 +1161,10 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
     }
 
     // Extract emotional data from observation
-    const obsData = observation.data as Record<string, unknown>;
+    const obsData = observation.data;
 
     const updateDim = (dim: DimensionBelief, observedValue?: number): DimensionBelief => {
-      if (observedValue === undefined) return dim;
+      if (observedValue === undefined) {return dim;}
 
       const prior = dim.posterior; // Previous posterior becomes new prior
 
@@ -1238,7 +1238,7 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
     observedEmotion: EmotionType | undefined,
     weight: number
   ): IFullBeliefState['emotional']['primaryEmotion'] {
-    if (!observedEmotion) return current;
+    if (!observedEmotion) {return current;}
 
     const newDistribution = new Map<EmotionType, number>(current.distribution);
 
@@ -1296,7 +1296,7 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
       return current;
     }
 
-    const obsData = observation.data as Record<string, unknown>;
+    const obsData = observation.data;
 
     /**
      * Bayesian update for a single dimension
@@ -1310,7 +1310,7 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
       observedValue: number | undefined,
       dimensionName: string
     ): DimensionBelief => {
-      if (observedValue === undefined) return dim;
+      if (observedValue === undefined) {return dim;}
 
       const prior = dim.posterior; // Previous posterior becomes new prior
 
@@ -1447,7 +1447,7 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
       return current;
     }
 
-    const obsData = observation.data as Record<string, unknown>;
+    const obsData = observation.data;
 
     if (obsData.riskLevel !== undefined) {
       const riskMapping: Record<string, number> = {
@@ -1542,7 +1542,7 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
       return current;
     }
 
-    const obsData = observation.data as Record<string, unknown>;
+    const obsData = observation.data;
 
     /**
      * Bayesian update for resource dimension with asymmetric updates
@@ -1552,9 +1552,9 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
       dim: DimensionBelief,
       observedValue: number | undefined,
       dimensionName: string,
-      isProtective: boolean = false // Protective factors have slower decay
+      isProtective = false // Protective factors have slower decay
     ): DimensionBelief => {
-      if (observedValue === undefined) return dim;
+      if (observedValue === undefined) {return dim;}
 
       const prior = dim.posterior;
 
@@ -1800,29 +1800,29 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
     dimension: string
   ): DimensionBelief | null {
     // Search emotional
-    if (dimension === 'valence') return belief.emotional.valence;
-    if (dimension === 'arousal') return belief.emotional.arousal;
-    if (dimension === 'dominance') return belief.emotional.dominance;
+    if (dimension === 'valence') {return belief.emotional.valence;}
+    if (dimension === 'arousal') {return belief.emotional.arousal;}
+    if (dimension === 'dominance') {return belief.emotional.dominance;}
 
     // Search cognitive
-    if (dimension === 'selfView') return belief.cognitive.selfView;
-    if (dimension === 'worldView') return belief.cognitive.worldView;
-    if (dimension === 'futureView') return belief.cognitive.futureView;
+    if (dimension === 'selfView') {return belief.cognitive.selfView;}
+    if (dimension === 'worldView') {return belief.cognitive.worldView;}
+    if (dimension === 'futureView') {return belief.cognitive.futureView;}
 
     // Search risk
-    if (dimension === 'overallRisk') return belief.risk.overallRisk;
+    if (dimension === 'overallRisk') {return belief.risk.overallRisk;}
     const riskCategory = belief.risk.categoryRisks.get(dimension);
-    if (riskCategory) return riskCategory;
+    if (riskCategory) {return riskCategory;}
 
     // Search resources
-    if (dimension === 'energy') return belief.resources.energy;
-    if (dimension === 'copingCapacity') return belief.resources.copingCapacity;
-    if (dimension === 'socialSupport') return belief.resources.socialSupport;
-    if (dimension === 'positive') return belief.resources.perma.positive;
-    if (dimension === 'engagement') return belief.resources.perma.engagement;
-    if (dimension === 'relationships') return belief.resources.perma.relationships;
-    if (dimension === 'meaning') return belief.resources.perma.meaning;
-    if (dimension === 'accomplishment') return belief.resources.perma.accomplishment;
+    if (dimension === 'energy') {return belief.resources.energy;}
+    if (dimension === 'copingCapacity') {return belief.resources.copingCapacity;}
+    if (dimension === 'socialSupport') {return belief.resources.socialSupport;}
+    if (dimension === 'positive') {return belief.resources.perma.positive;}
+    if (dimension === 'engagement') {return belief.resources.perma.engagement;}
+    if (dimension === 'relationships') {return belief.resources.perma.relationships;}
+    if (dimension === 'meaning') {return belief.resources.perma.meaning;}
+    if (dimension === 'accomplishment') {return belief.resources.perma.accomplishment;}
 
     return null;
   }
@@ -1892,7 +1892,7 @@ export class BeliefUpdateEngine implements IBeliefUpdateEngine {
     const seen = new Set<string>();
     return changes.filter(change => {
       const key = `${change.dimension}_${change.changeType}`;
-      if (seen.has(key)) return false;
+      if (seen.has(key)) {return false;}
       seen.add(key);
       return true;
     });

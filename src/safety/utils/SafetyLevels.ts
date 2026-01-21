@@ -13,12 +13,12 @@
  */
 
 import {
-  SafetyLevel,
-  ISafetyLevelConfig,
-  ISafetyContext,
-  RiskLevel,
-  EUAIActRiskLevel,
-  ASL3SecurityTier,
+  type SafetyLevel,
+  type ISafetyLevelConfig,
+  type ISafetyContext,
+  type RiskLevel,
+  type EUAIActRiskLevel,
+  type ASL3SecurityTier,
 } from '../interfaces/ISafetyEnvelope';
 
 // ============================================================================
@@ -528,7 +528,7 @@ export class SafetyLevelService {
    */
   requiresExplainability(context: ISafetyContext): boolean {
     // Always require for minors
-    if (context.isMinor) return true;
+    if (context.isMinor) {return true;}
 
     // Require for high-risk operations
     if (context.currentRiskLevel === 'high' || context.currentRiskLevel === 'critical') {

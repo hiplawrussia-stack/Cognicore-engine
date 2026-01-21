@@ -19,14 +19,14 @@
  */
 
 import {
-  IDigitalTwinState,
-  IDigitalTwinService,
-  ITwinStateVariable,
-  IStateTrajectory,
-  ITwinPersonalization,
-  IPhenotypingObservation,
-  StateEstimationMethod,
-  PhenotypingSource,
+  type IDigitalTwinState,
+  type IDigitalTwinService,
+  type ITwinStateVariable,
+  type IStateTrajectory,
+  type ITwinPersonalization,
+  type IPhenotypingObservation,
+  type StateEstimationMethod,
+  type PhenotypingSource,
   generateTwinId,
 } from '../interfaces/IDigitalTwin';
 
@@ -40,14 +40,14 @@ import { secureRandom } from '../../utils/SecureRandom';
 /**
  * Default state variables for mental health digital twin
  */
-const DEFAULT_STATE_VARIABLES: Array<{
+const DEFAULT_STATE_VARIABLES: {
   id: string;
   name: string;
   nameRu: string;
   defaultValue: number;
   processNoise: number;
   measurementNoise: number;
-}> = [
+}[] = [
   // Emotional variables
   { id: 'emotion_anxiety', name: 'Anxiety Level', nameRu: 'Уровень тревоги', defaultValue: 0.3, processNoise: 0.05, measurementNoise: 0.1 },
   { id: 'emotion_sadness', name: 'Sadness Level', nameRu: 'Уровень грусти', defaultValue: 0.3, processNoise: 0.05, measurementNoise: 0.1 },
@@ -492,11 +492,11 @@ export class DigitalTwinService implements IDigitalTwinService {
 
     for (const varId of affectedVars) {
       const variable = twin.variables.get(varId);
-      if (!variable) continue;
+      if (!variable) {continue;}
 
       // Extract measurement from observation
       const measurement = this.extractMeasurement(observation, varId);
-      if (measurement === null) continue;
+      if (measurement === null) {continue;}
 
       // Apply Kalman update
       if (variable.kalmanState) {
@@ -603,7 +603,7 @@ export class DigitalTwinService implements IDigitalTwinService {
 
   private applyKalmanEstimation(twin: IDigitalTwinState): void {
     for (const [, variable] of Array.from(twin.variables)) {
-      if (!variable.kalmanState) continue;
+      if (!variable.kalmanState) {continue;}
 
       const config = this.getKalmanConfig(variable);
       const state = this.kalmanEngine.initialize(config);
@@ -762,7 +762,7 @@ export class DigitalTwinService implements IDigitalTwinService {
       // Entropy
       let entropy = 0;
       for (const prob of Array.from(twin.beliefState.discreteBeliefs.values())) {
-        if (prob > 0) entropy -= prob * Math.log2(prob);
+        if (prob > 0) {entropy -= prob * Math.log2(prob);}
       }
       twin.beliefState.entropy = entropy;
     }
@@ -811,7 +811,7 @@ export class DigitalTwinService implements IDigitalTwinService {
   // ==========================================================================
 
   private estimateMeanReversionRate(timeSeries: number[]): number {
-    if (timeSeries.length < 3) return 0.1;
+    if (timeSeries.length < 3) {return 0.1;}
 
     // AR(1) parameter estimation
     const mean = timeSeries.reduce((a, b) => a + b, 0) / timeSeries.length;
@@ -834,7 +834,7 @@ export class DigitalTwinService implements IDigitalTwinService {
   }
 
   private calculateVolatility(timeSeries: number[]): number {
-    if (timeSeries.length < 2) return 0.1;
+    if (timeSeries.length < 2) {return 0.1;}
 
     // Calculate returns/changes
     const changes: number[] = [];
@@ -860,11 +860,11 @@ export class DigitalTwinService implements IDigitalTwinService {
       for (let i = 0; i < history.states.length; i++) {
         const timepoint = history.timepoints[i];
         const state = history.states[i];
-        if (!timepoint || !state) continue;
+        if (!timepoint || !state) {continue;}
         const dayOfWeek = timepoint.getDay();
         const value = state.variables.get(varDef.id)?.value ?? 0.5;
         const dayArr = dayValues[dayOfWeek];
-        if (dayArr) dayArr.push(value);
+        if (dayArr) {dayArr.push(value);}
       }
 
       const pattern = dayValues.map(values =>

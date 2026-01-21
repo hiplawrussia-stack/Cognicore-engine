@@ -14,7 +14,7 @@ import {
 import type { IVoiceAdapterConfig, IVoiceAnalysisResult, IMultimodalResult } from '../interfaces/IVoiceAdapter';
 
 // Helper to create synthetic audio buffer
-function createTestAudio(durationSec: number = 1, frequency: number = 440): Float32Array {
+function createTestAudio(durationSec = 1, frequency = 440): Float32Array {
   const sampleRate = DEFAULT_VOICE_CONFIG.sampleRate;
   const numSamples = Math.floor(sampleRate * durationSec);
   const audioBuffer = new Float32Array(numSamples);

@@ -396,7 +396,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
     for (let t = 0; t < predictions.length; t++) {
       const predRow = predictions[t];
       const actualRow = actuals[t];
-      if (!predRow || !actualRow) continue;
+      if (!predRow || !actualRow) {continue;}
       for (let i = 0; i < predRow.length; i++) {
         totalError += Math.pow((predRow[i] ?? 0) - (actualRow[i] ?? 0), 2);
       }
@@ -442,14 +442,14 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
       // Initialize state
       const firstObs = sample.observations[0];
       const firstTimestamp = sample.timestamps[0];
-      if (!firstObs || !firstTimestamp) continue;
+      if (!firstObs || !firstTimestamp) {continue;}
       let state = this.initializeState(firstObs, firstTimestamp);
 
       for (let t = 1; t < sample.observations.length; t++) {
         // Update with observation
         const obs = sample.observations[t];
         const ts = sample.timestamps[t];
-        if (!obs || !ts) continue;
+        if (!obs || !ts) {continue;}
         state = this.update(state, obs, ts);
 
         // Compute losses if ground truth available
@@ -740,7 +740,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
   }
 
   private encodeContext(
-    history: Array<{ observation: number[]; timestamp: Date; embedding?: number[] }>
+    history: { observation: number[]; timestamp: Date; embedding?: number[] }[]
   ): number[][] {
     if (history.length === 0) {
       return [new Array(this.config.embedDim).fill(0)];
@@ -791,11 +791,11 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
       for (let i = 0; i < seqLen; i++) {
         const scoreRow: number[] = [];
         const Qi = Q[i];
-        if (!Qi) continue;
+        if (!Qi) {continue;}
         for (let j = 0; j < seqLen; j++) {
           let score = 0;
           const Kj = K[j];
-          if (!Kj) continue;
+          if (!Kj) {continue;}
           for (let k = 0; k < headDim; k++) {
             score += (Qi[k] ?? 0) * (Kj[k] ?? 0);
           }
@@ -812,15 +812,15 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
       for (let i = 0; i < seqLen; i++) {
         const attended = new Array(headDim).fill(0);
         const scoresI = scores[i];
-        if (!scoresI) continue;
+        if (!scoresI) {continue;}
         for (let j = 0; j < seqLen; j++) {
           const Vj = V[j];
-          if (!Vj) continue;
+          if (!Vj) {continue;}
           for (let k = 0; k < headDim; k++) {
             attended[k] += (scoresI[j] ?? 0) * (Vj[k] ?? 0);
           }
         }
-        if (!headOutputs[i]) headOutputs[i] = [];
+        if (!headOutputs[i]) {headOutputs[i] = [];}
         headOutputs[i]!.push(...attended);
       }
     }
@@ -873,7 +873,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
   }
 
   private transformerPredict(
-    _history: Array<{ observation: number[]; timestamp: Date; embedding?: number[] }>,
+    _history: { observation: number[]; timestamp: Date; embedding?: number[] }[],
     contextEncoding: number[][]
   ): number[] {
     if (contextEncoding.length === 0) {
@@ -905,7 +905,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
 
     const logit = lastContext.reduce((sum, v, i) =>
       sum + v * (this.weights!.blendPredictor!.weights[i] ?? 0), 0
-    ) + this.weights!.blendPredictor!.bias;
+    ) + this.weights!.blendPredictor.bias;
 
     // Sigmoid to get ratio between 0 and 1
     return this.sigmoid(logit);
@@ -951,11 +951,11 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
     for (let i = 0; i < seqLen; i++) {
       const weightRow: number[] = [];
       const embI = embeddings[i];
-      if (!embI) continue;
+      if (!embI) {continue;}
       for (let j = 0; j < seqLen; j++) {
         let score = 0;
         const embJ = embeddings[j];
-        if (!embJ) continue;
+        if (!embJ) {continue;}
         for (let k = 0; k < embedDim; k++) {
           score += (embI[k] ?? 0) * (embJ[k] ?? 0);
         }
@@ -973,7 +973,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
   }
 
   private findMostInfluentialDimension(observation: number[]): string {
-    if (observation.length === 0) return 'unknown';
+    if (observation.length === 0) {return 'unknown';}
     let maxIdx = 0;
     let maxVal = Math.abs(observation[0] ?? 0);
 
@@ -990,10 +990,10 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
 
   private detectPatternMatching(attentionWeights: number[][]): boolean {
     // Check if attention focuses on non-adjacent tokens (pattern matching)
-    if (attentionWeights.length < 3) return false;
+    if (attentionWeights.length < 3) {return false;}
 
     const lastRow = attentionWeights[attentionWeights.length - 1];
-    if (!lastRow || lastRow.length < 2) return false;
+    if (!lastRow || lastRow.length < 2) {return false;}
     const adjacentWeight = (lastRow[lastRow.length - 2] ?? 0) + (lastRow[lastRow.length - 1] ?? 0);
     const totalWeight = lastRow.reduce((a, b) => a + b, 0);
 
@@ -1092,12 +1092,12 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
     for (let i = 0; i < n; i++) {
       let maxRow = i;
       const rowI = augmented[i];
-      if (!rowI) continue;
+      if (!rowI) {continue;}
 
       for (let k = i + 1; k < n; k++) {
         const rowK = augmented[k];
         const rowMax = augmented[maxRow];
-        if (!rowK || !rowMax) continue;
+        if (!rowK || !rowMax) {continue;}
         if (Math.abs(rowK[i] ?? 0) > Math.abs(rowMax[i] ?? 0)) {
           maxRow = k;
         }
@@ -1110,7 +1110,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
       }
 
       const currentRow = augmented[i];
-      if (!currentRow) continue;
+      if (!currentRow) {continue;}
 
       const pivotVal = currentRow[i] ?? 0;
       if (Math.abs(pivotVal) < 1e-10) {
@@ -1120,7 +1120,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
       for (let k = 0; k < n; k++) {
         if (k !== i) {
           const rowK = augmented[k];
-          if (!rowK) continue;
+          if (!rowK) {continue;}
           const factor = (rowK[i] ?? 0) / pivotVal;
           for (let j = 0; j < 2 * n; j++) {
             rowK[j] = (rowK[j] ?? 0) - factor * (currentRow[j] ?? 0);

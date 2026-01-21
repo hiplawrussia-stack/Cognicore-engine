@@ -561,7 +561,7 @@ export interface IMetacognitiveTherapyEngine {
  */
 export interface MCTContext {
   readonly state: IMetacognitiveState;
-  readonly recentMessages: Array<{ text: string; isUser: boolean; timestamp: Date }>;
+  readonly recentMessages: { text: string; isUser: boolean; timestamp: Date }[];
   readonly currentTopic?: string;
   readonly sessionGoal?: string;
   readonly language: 'ru' | 'en';

@@ -90,7 +90,7 @@ export function secureRandomInt(min: number, max: number): number {
  * boxMullerSecure() // [0.234, -1.567] - standard normal
  * boxMullerSecure(100, 15) // [98.2, 112.3] - IQ-like distribution
  */
-export function boxMullerSecure(mean: number = 0, stdDev: number = 1): [number, number] {
+export function boxMullerSecure(mean = 0, stdDev = 1): [number, number] {
   let u1: number, u2: number;
 
   // Ensure u1 > 0 to avoid log(0)
@@ -115,7 +115,7 @@ export function boxMullerSecure(mean: number = 0, stdDev: number = 1): [number, 
  * @param stdDev - The standard deviation (default: 1)
  * @returns A Gaussian random number
  */
-export function gaussianSecure(mean: number = 0, stdDev: number = 1): number {
+export function gaussianSecure(mean = 0, stdDev = 1): number {
   return boxMullerSecure(mean, stdDev)[0];
 }
 
@@ -184,7 +184,9 @@ export function gammaSampleSecure(shape: number, scale: number): number {
 export function shuffleSecure<T>(array: T[]): T[] {
   for (let i = array.length - 1; i > 0; i--) {
     const j = randomInt(0, i + 1);
-    [array[i], array[j]] = [array[j], array[i]];
+    const temp = array[i]!;
+    array[i] = array[j]!;
+    array[j] = temp;
   }
   return array;
 }
@@ -200,7 +202,7 @@ export function randomElementSecure<T>(array: readonly T[]): T {
   if (array.length === 0) {
     throw new Error('Cannot select from empty array');
   }
-  return array[randomInt(0, array.length)];
+  return array[randomInt(0, array.length)]!;
 }
 
 /**
@@ -234,7 +236,8 @@ export function weightedRandomIndexSecure(weights: readonly number[]): number {
   let random = secureRandom() * totalWeight;
 
   for (let i = 0; i < weights.length; i++) {
-    random -= weights[i];
+    const weight = weights[i] ?? 0;
+    random -= weight;
     if (random <= 0) {
       return i;
     }

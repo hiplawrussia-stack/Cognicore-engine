@@ -18,14 +18,14 @@
  */
 
 import {
-  IHumanEscalationService,
-  IHumanEscalationRequest,
-  IEscalationDecision,
-  ISafetyContext,
-  IConversationMessage,
-  EscalationReason,
-  EscalationStatus,
-  EscalationUrgency,
+  type IHumanEscalationService,
+  type IHumanEscalationRequest,
+  type IEscalationDecision,
+  type ISafetyContext,
+  type IConversationMessage,
+  type EscalationReason,
+  type EscalationStatus,
+  type EscalationUrgency,
   generateSafetyId,
 } from '../interfaces/ISafetyEnvelope';
 
@@ -317,8 +317,8 @@ const ESCALATION_RESPONSE_TEMPLATES = {
  */
 export class HumanEscalationService implements IHumanEscalationService {
   // In-memory storage (should be database in production)
-  private escalations: Map<string, IHumanEscalationRequest> = new Map();
-  private userEscalationHistory: Map<number, IHumanEscalationRequest[]> = new Map();
+  private escalations = new Map<string, IHumanEscalationRequest>();
+  private userEscalationHistory = new Map<number, IHumanEscalationRequest[]>();
 
   // ==========================================================================
   // ESCALATION DECISION
@@ -500,7 +500,7 @@ export class HumanEscalationService implements IHumanEscalationService {
     assignedTo?: string
   ): IHumanEscalationRequest | null {
     const escalation = this.escalations.get(escalationId);
-    if (!escalation) return null;
+    if (!escalation) {return null;}
 
     escalation.status = status;
 
@@ -533,7 +533,7 @@ export class HumanEscalationService implements IHumanEscalationService {
       .sort((a, b) => {
         // Sort by priority score (higher first)
         const priorityDiff = b.priorityScore - a.priorityScore;
-        if (priorityDiff !== 0) return priorityDiff;
+        if (priorityDiff !== 0) {return priorityDiff;}
 
         // Then by creation time (older first)
         return a.createdAt.getTime() - b.createdAt.getTime();
@@ -625,21 +625,21 @@ export class HumanEscalationService implements IHumanEscalationService {
    * Calculate emotional complexity score
    */
   private calculateEmotionalComplexity(emotionalState: ISafetyContext['emotionalState']): number {
-    if (!emotionalState) return 0;
+    if (!emotionalState) {return 0;}
 
     let complexity = 0;
 
     // High intensity emotions
-    if (emotionalState.intensity > 0.8) complexity += 0.3;
+    if (emotionalState.intensity > 0.8) {complexity += 0.3;}
 
     // Extreme valence
-    if (Math.abs(emotionalState.valence) > 0.7) complexity += 0.2;
+    if (Math.abs(emotionalState.valence) > 0.7) {complexity += 0.2;}
 
     // High arousal
-    if (emotionalState.arousal > 0.8) complexity += 0.2;
+    if (emotionalState.arousal > 0.8) {complexity += 0.2;}
 
     // Volatile trend
-    if (emotionalState.emotionalTrend === 'volatile') complexity += 0.3;
+    if (emotionalState.emotionalTrend === 'volatile') {complexity += 0.3;}
 
     // Declining trend with high intensity
     if (emotionalState.emotionalTrend === 'declining' && emotionalState.intensity > 0.6) {
@@ -647,8 +647,8 @@ export class HumanEscalationService implements IHumanEscalationService {
     }
 
     // PHQ-9 or anxiety indicators
-    if (emotionalState.phq9Score && emotionalState.phq9Score >= 10) complexity += 0.2;
-    if (emotionalState.anxietyLevel && emotionalState.anxietyLevel > 0.7) complexity += 0.1;
+    if (emotionalState.phq9Score && emotionalState.phq9Score >= 10) {complexity += 0.2;}
+    if (emotionalState.anxietyLevel && emotionalState.anxietyLevel > 0.7) {complexity += 0.1;}
 
     return Math.min(1, complexity);
   }

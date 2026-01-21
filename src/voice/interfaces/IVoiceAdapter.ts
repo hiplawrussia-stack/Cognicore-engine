@@ -186,11 +186,11 @@ export interface IProsodyFeatures {
   rhythmPattern: 'regular' | 'irregular' | 'hesitant' | 'rushed';
 
   /** Stress patterns (emphatic words) */
-  stressPatterns: Array<{
+  stressPatterns: {
     word: string;
     position: number;
     strength: number;
-  }>;
+  }[];
 
   /** Intonation contour type */
   intonationType: 'declarative' | 'interrogative' | 'exclamatory' | 'neutral';
@@ -304,18 +304,18 @@ export interface ITextAnalysis {
   textEmotions: Map<string, number>;
 
   /** Cognitive distortions detected */
-  cognitiveDistortions: Array<{
+  cognitiveDistortions: {
     type: string;
     phrase: string;
     confidence: number;
-  }>;
+  }[];
 
   /** Risk keywords detected */
-  riskKeywords: Array<{
+  riskKeywords: {
     keyword: string;
     category: string;
     severity: number;
-  }>;
+  }[];
 
   /** Transcription confidence */
   confidence: number;

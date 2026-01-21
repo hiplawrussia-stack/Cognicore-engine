@@ -19,7 +19,7 @@ import {
   defaultCrisisDetector,
   CrisisSeverity,
   CrisisType,
-  StateRiskData,
+  type StateRiskData,
   CrisisDetectionResult,
 } from '../CrisisDetector';
 

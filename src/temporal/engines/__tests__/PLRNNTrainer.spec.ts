@@ -7,7 +7,7 @@
 
 import { PLRNNTrainer, createPLRNNTrainer } from '../PLRNNTrainer';
 import { PLRNNEngine } from '../PLRNNEngine';
-import { generateSyntheticStudentLifeData, StudentLifeDataset } from './data/StudentLifeLoader';
+import { generateSyntheticStudentLifeData, type StudentLifeDataset } from './data/StudentLifeLoader';
 import type { IPLRNNTrainingConfig, IEMATrainingResult } from '../../interfaces/IPLRNNTrainer';
 
 describe('PLRNNTrainer', () => {

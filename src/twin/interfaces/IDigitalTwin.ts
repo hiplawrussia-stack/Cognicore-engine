@@ -29,7 +29,7 @@ import { randomUUID } from 'crypto';
 // UTILITY FUNCTIONS
 // ============================================================================
 
-export function generateTwinId(prefix: string = 'TWIN'): string {
+export function generateTwinId(prefix = 'TWIN'): string {
   return `${prefix}-${randomUUID().slice(0, 8).toUpperCase()}`;
 }
 
@@ -595,11 +595,11 @@ export interface IScenarioResult {
   epistemic: number;                   // Model uncertainty
 
   // 2025: Explainability
-  keyDrivers: Array<{
+  keyDrivers: {
     variable: string;
     contribution: number;
     direction: 'positive' | 'negative';
-  }>;
+  }[];
 
   // Confidence
   confidenceLevel: number;

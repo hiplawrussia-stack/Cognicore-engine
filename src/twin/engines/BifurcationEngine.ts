@@ -21,15 +21,15 @@
  */
 
 import {
-  IDigitalTwinState,
-  ITippingPoint,
-  IStabilityLandscape,
-  IAttractorBasin,
-  IStateTrajectory,
-  ITippingPointDetectorService,
-  IInterventionRecommendation,
-  BifurcationType,
-  AttractorType,
+  type IDigitalTwinState,
+  type ITippingPoint,
+  type IStabilityLandscape,
+  type IAttractorBasin,
+  type IStateTrajectory,
+  type ITippingPointDetectorService,
+  type IInterventionRecommendation,
+  type BifurcationType,
+  type AttractorType,
   generateTwinId,
 } from '../interfaces/IDigitalTwin';
 
@@ -226,11 +226,11 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     // Analyze each critical variable
     for (const [varId, threshold] of Object.entries(VARIABLE_THRESHOLDS)) {
       const twinVar = twin.variables.get(varId);
-      if (!twinVar) continue;
+      if (!twinVar) {continue;}
 
       // Extract time series
       const timeSeries = this.extractTimeSeries(stateHistory, varId);
-      if (timeSeries.length < 7) continue;
+      if (timeSeries.length < 7) {continue;}
 
       // Calculate early warning signals
       const ews = this.calculateEarlyWarningSignals(timeSeries);
@@ -390,7 +390,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
 
     for (const [varId, threshold] of Object.entries(VARIABLE_THRESHOLDS)) {
       const twinVar = twin.variables.get(varId);
-      if (!twinVar) continue;
+      if (!twinVar) {continue;}
 
       const criticalValue = threshold.direction === 'high' ? threshold.crisis : threshold.recovery;
       const dist = threshold.direction === 'high'
@@ -521,7 +521,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
   }
 
   private calculateAutocorrelation(series: number[], lag: number): number {
-    if (series.length <= lag) return 0;
+    if (series.length <= lag) {return 0;}
 
     const n = series.length - lag;
     const mean = series.reduce((a, b) => a + b, 0) / series.length;
@@ -553,7 +553,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     const mean = series.reduce((a, b) => a + b, 0) / n;
     const std = Math.sqrt(this.calculateVariance(series));
 
-    if (std === 0) return 0;
+    if (std === 0) {return 0;}
 
     return series.reduce((sum, x) => sum + Math.pow((x - mean) / std, 3), 0) / n;
   }
@@ -582,7 +582,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
    * 2025: Detects long-range correlations
    */
   private calculateDFA(series: number[]): number {
-    if (series.length < 16) return 0.5;
+    if (series.length < 16) {return 0.5;}
 
     // Cumulative sum (profile)
     const mean = series.reduce((a, b) => a + b, 0) / series.length;
@@ -595,7 +595,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     const fluctuations: number[] = [];
 
     for (const s of scales) {
-      if (s > series.length / 4) continue;
+      if (s > series.length / 4) {continue;}
 
       const numWindows = Math.floor(profile.length / s);
       let totalFluctuation = 0;
@@ -616,7 +616,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     }
 
     // Fit log-log slope (DFA exponent)
-    if (fluctuations.length < 2) return 0.5;
+    if (fluctuations.length < 2) {return 0.5;}
 
     const logScales = scales.slice(0, fluctuations.length).map(s => Math.log(s));
     const logFluc = fluctuations.map(f => Math.log(f + 0.001));
@@ -630,7 +630,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
    * 2025: Signature of approaching bifurcation
    */
   private detectFlickering(series: number[]): number {
-    if (series.length < 10) return 0;
+    if (series.length < 10) {return 0;}
 
     // Find bimodal distribution
     const histogram = new Array(10).fill(0);
@@ -650,7 +650,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
       }
     }
 
-    if (peaks.length < 2) return 0;
+    if (peaks.length < 2) {return 0;}
 
     // Count transitions between modes
     const peak0 = peaks[0] ?? 0;
@@ -756,7 +756,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     if (oscillation > 0.6 && ews.periodicityScore > 0.5) {
       // Check for period doubling signature
       const periodDoubling = this.detectPeriodDoubling(timeSeries);
-      if (periodDoubling > 0.4) return 'period_doubling';
+      if (periodDoubling > 0.4) {return 'period_doubling';}
       return 'hopf';
     }
 
@@ -792,7 +792,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
    * Detect period doubling (route to chaos)
    */
   private detectPeriodDoubling(series: number[]): number {
-    if (series.length < 16) return 0;
+    if (series.length < 16) {return 0;}
 
     // Calculate autocorrelation at different lags
     const ac1 = this.calculateAutocorrelation(series, 1);
@@ -849,7 +849,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
   }
 
   private calculateTrend(series: number[]): number {
-    if (series.length < 2) return 0;
+    if (series.length < 2) {return 0;}
 
     const n = series.length;
     const sumX = (n * (n - 1)) / 2;
@@ -861,7 +861,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
   }
 
   private fitExponentialApproach(series: number[], threshold: number): { rate: number; r2: number } {
-    if (series.length < 3) return { rate: 0, r2: 0 };
+    if (series.length < 3) {return { rate: 0, r2: 0 };}
 
     const logDistances: number[] = [];
     const times: number[] = [];
@@ -875,7 +875,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
       }
     }
 
-    if (logDistances.length < 2) return { rate: 0, r2: 0 };
+    if (logDistances.length < 2) {return { rate: 0, r2: 0 };}
 
     const fit = this.linearFit(logDistances, times);
     const rate = -fit.slope;
@@ -912,10 +912,10 @@ export class BifurcationEngine implements ITippingPointDetectorService {
   // ==========================================================================
 
   private classifyAttractor(twin: IDigitalTwinState): AttractorType {
-    if (twin.lyapunovExponent > 0) return 'strange';
-    if (twin.stability === 'stable') return 'point';
-    if (twin.stability === 'metastable') return 'limit_cycle';
-    if (twin.stability === 'transitioning') return 'quasi_periodic';
+    if (twin.lyapunovExponent > 0) {return 'strange';}
+    if (twin.stability === 'stable') {return 'point';}
+    if (twin.stability === 'metastable') {return 'limit_cycle';}
+    if (twin.stability === 'transitioning') {return 'quasi_periodic';}
     return 'none';
   }
 
@@ -1035,7 +1035,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
   }
 
   private calculateBasinPosition(twin: IDigitalTwinState, attractor: IAttractorBasin | null): number[] {
-    if (!attractor) return [0.5, 0.5];
+    if (!attractor) {return [0.5, 0.5];}
 
     const position: number[] = [];
     for (const [varId, centerValue] of Array.from(attractor.centerState)) {
@@ -1049,7 +1049,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
   }
 
   private findTransitionPath(attractors: IAttractorBasin[], current: IAttractorBasin | null): string[] {
-    if (!current) return [];
+    if (!current) {return [];}
 
     const path: string[] = [current.attractorId];
     const visited = new Set([current.attractorId]);
@@ -1057,13 +1057,13 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     let node = current;
     while (node.neighboringAttractors.length > 0) {
       const next = node.neighboringAttractors.find(n => !visited.has(n));
-      if (!next) break;
+      if (!next) {break;}
 
       path.push(next);
       visited.add(next);
 
       const nextAttractor = attractors.find(a => a.attractorId === next);
-      if (!nextAttractor) break;
+      if (!nextAttractor) {break;}
 
       node = nextAttractor;
     }
@@ -1084,7 +1084,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     return baseInterventions
       .map(int => ({
         ...int,
-        urgency: urgency as 'low' | 'medium' | 'high' | 'critical',
+        urgency: urgency,
       }))
       .sort((a, b) => Math.abs(b.expectedEffect) - Math.abs(a.expectedEffect));
   }

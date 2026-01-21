@@ -63,11 +63,11 @@ export interface IHybridPrediction {
     /** Mean prediction at each horizon step */
     trajectory: number[][];
     /** Bayesian credible intervals */
-    credibleIntervals: Array<{
+    credibleIntervals: {
       lower: number[];
       upper: number[];
       level: number;
-    }>;
+    }[];
     /** Final prediction */
     finalPrediction: number[];
   };
@@ -132,7 +132,7 @@ export function beliefStateToUncertainty(belief: IFullBeliefState): number[] {
  */
 export function beliefStateToPLRNNState(
   belief: IFullBeliefState,
-  hiddenUnits: number = 16
+  hiddenUnits = 16
 ): IPLRNNState {
   const observation = beliefStateToObservation(belief);
   const uncertainty = beliefStateToUncertainty(belief);
@@ -171,7 +171,7 @@ export function plrnnStateToBeliefUpdate(
  */
 export function beliefStateToKalmanFormerState(
   belief: IFullBeliefState,
-  _contextWindow: number = 24
+  _contextWindow = 24
 ): IKalmanFormerState {
   const observation = beliefStateToObservation(belief);
   const uncertainty = beliefStateToUncertainty(belief);
@@ -250,7 +250,7 @@ export function mergeHybridPredictions(
   plrnnPred?: IPLRNNPrediction,
   kfPred?: IKalmanFormerPrediction,
   horizon: 'short' | 'medium' | 'long' = 'medium',
-  confidence: number = 0.5
+  confidence = 0.5
 ): IHybridPrediction {
   // Determine weights based on horizon
   // Short-term: favor KalmanFormer (better for noisy observations)

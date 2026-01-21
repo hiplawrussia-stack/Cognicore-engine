@@ -62,7 +62,7 @@ import {
 /**
  * Generate unique ID using cryptographically secure random
  */
-function generateId(prefix: string = 'dcm'): string {
+function generateId(prefix = 'dcm'): string {
   return generateShortSecureId(prefix);
 }
 
@@ -74,10 +74,10 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
   private readonly config: DeepCognitiveMirrorConfig;
 
   // Storage (in-memory, can be replaced with persistence layer)
-  private readonly chainHistory: Map<string | number, ABCDChain[]> = new Map();
-  private readonly patternCache: Map<string | number, CognitivePattern[]> = new Map();
-  private readonly insightHistory: Map<string | number, TherapeuticInsight[]> = new Map();
-  private readonly distortionCounts: Map<string | number, Map<CognitiveDistortionType, number>> = new Map();
+  private readonly chainHistory = new Map<string | number, ABCDChain[]>();
+  private readonly patternCache = new Map<string | number, CognitivePattern[]>();
+  private readonly insightHistory = new Map<string | number, TherapeuticInsight[]>();
+  private readonly distortionCounts = new Map<string | number, Map<CognitiveDistortionType, number>>();
 
   constructor(config?: Partial<DeepCognitiveMirrorConfig>) {
     this.config = { ...DEFAULT_MIRROR_CONFIG, ...config };
@@ -129,13 +129,13 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
   }
 
   async analyzeSession(
-    messages: Array<{ text: string; timestamp: Date }>,
+    messages: { text: string; timestamp: Date }[],
     userId: string | number
   ): Promise<SessionAnalysisResult> {
     const sessionId = generateId('session');
     const allChains: ABCDChain[] = [];
-    const emotionalTrajectory: Array<{ timestamp: Date; valence: number; arousal: number }> = [];
-    const insightMoments: Array<{ timestamp: Date; type: InsightType; description: string }> = [];
+    const emotionalTrajectory: { timestamp: Date; valence: number; arousal: number }[] = [];
+    const insightMoments: { timestamp: Date; type: InsightType; description: string }[] = [];
 
     // Analyze each message
     for (const msg of messages) {
@@ -267,7 +267,7 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
       // Check patterns
       for (const pattern of patterns) {
         const match = text.match(pattern);
-        if (match && match.index !== undefined) {
+        if (match?.index !== undefined) {
           const existing = distortions.find(d => d.type === distortionType);
           if (!existing) {
             distortions.push({
@@ -333,7 +333,7 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
 
   async detectPatterns(
     userId: string | number,
-    minConfidence: number = 0.5
+    minConfidence = 0.5
   ): Promise<CognitivePattern[]> {
     const chains = await this.getChainHistory(userId, { limit: 100 });
     const patterns: CognitivePattern[] = [];
@@ -368,7 +368,7 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
         const definition = DISTORTION_DEFINITIONS[distortionType];
         const firstChain = relatedChains[relatedChains.length - 1];
         const lastChain = relatedChains[0];
-        if (!firstChain || !lastChain) continue;
+        if (!firstChain || !lastChain) {continue;}
 
         patterns.push({
           id: generateId('pattern'),
@@ -478,7 +478,7 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
     const textLower = text.toLowerCase();
     for (const distortion of pattern.associatedDistortions) {
       const keywords = DISTORTION_KEYWORDS[distortion];
-      if (!keywords) continue;
+      if (!keywords) {continue;}
       const isRussian = this.detectRussian(text);
       const relevantKeywords = isRussian ? keywords.keywordsRu : keywords.keywords;
 
@@ -556,7 +556,7 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
 
   async generateSocraticQuestions(
     thought: AutomaticThought,
-    count: number = 3
+    count = 3
   ): Promise<SocraticQuestion[]> {
     const questions: SocraticQuestion[] = [];
     const distortions = thought.distortions;
@@ -625,7 +625,7 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
 
   async generateAlternativeThoughts(
     thought: AutomaticThought,
-    count: number = 3
+    count = 3
   ): Promise<AlternativeThought[]> {
     const alternatives: AlternativeThought[] = [];
     const mainDistortion = thought.distortions[0]?.type;
@@ -706,9 +706,9 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
 
     const strategies = mainDistortion
       ? alternativeStrategies[mainDistortion]
-      : alternativeStrategies['catastrophizing'];
+      : alternativeStrategies.catastrophizing;
 
-    if (!strategies) return alternatives;
+    if (!strategies) {return alternatives;}
     for (const strategy of strategies.slice(0, count)) {
       alternatives.push({
         content: strategy,
@@ -896,7 +896,7 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
 
   async getInsightHistory(
     userId: string | number,
-    limit: number = 20
+    limit = 20
   ): Promise<TherapeuticInsight[]> {
     const history = this.insightHistory.get(userId) ?? [];
     return history.slice(0, limit);
@@ -987,7 +987,7 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
 
   private async extractEmotionalConsequences(text: string, isRussian: boolean): Promise<EmotionalConsequence[]> {
     const consequences: EmotionalConsequence[] = [];
-    const detectedEmotions: Array<{ type: EmotionType; intensity: number; confidence: number }> = [];
+    const detectedEmotions: { type: EmotionType; intensity: number; confidence: number }[] = [];
 
     // Detect emotions from keywords
     for (const [emotionType, config] of Object.entries(EMOTION_KEYWORDS)) {
@@ -1119,15 +1119,15 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
       : ['if', 'what if', 'might', 'could', 'maybe'];
 
     for (const marker of hypotheticalMarkers) {
-      if (lowerText.includes(marker)) return 'hypothetical';
+      if (lowerText.includes(marker)) {return 'hypothetical';}
     }
 
     for (const marker of futureMarkers) {
-      if (lowerText.includes(marker)) return 'future';
+      if (lowerText.includes(marker)) {return 'future';}
     }
 
     for (const marker of pastMarkers) {
-      if (lowerText.includes(marker)) return 'past';
+      if (lowerText.includes(marker)) {return 'past';}
     }
 
     return 'present';
@@ -1168,15 +1168,15 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
     let futureCount = 0;
 
     for (const marker of selfMarkers) {
-      if (lowerText.includes(marker)) selfCount++;
+      if (lowerText.includes(marker)) {selfCount++;}
     }
 
     for (const marker of worldMarkers) {
-      if (lowerText.includes(marker)) worldCount++;
+      if (lowerText.includes(marker)) {worldCount++;}
     }
 
     for (const marker of futureMarkers) {
-      if (lowerText.includes(marker)) futureCount++;
+      if (lowerText.includes(marker)) {futureCount++;}
     }
 
     const max = Math.max(selfCount, worldCount, futureCount);
@@ -1185,12 +1185,12 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
       return 'self'; // Default to self
     }
 
-    if (selfCount === max && worldCount === max) return 'multiple';
-    if (selfCount === max && futureCount === max) return 'multiple';
-    if (worldCount === max && futureCount === max) return 'multiple';
+    if (selfCount === max && worldCount === max) {return 'multiple';}
+    if (selfCount === max && futureCount === max) {return 'multiple';}
+    if (worldCount === max && futureCount === max) {return 'multiple';}
 
-    if (selfCount === max) return 'self';
-    if (worldCount === max) return 'world';
+    if (selfCount === max) {return 'self';}
+    if (worldCount === max) {return 'world';}
     return 'future';
   }
 
@@ -1198,12 +1198,12 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
     const urges: BehavioralUrge[] = [];
     const lowerText = text.toLowerCase();
 
-    const urgePatterns: Array<{
+    const urgePatterns: {
       keywords: { en: string[]; ru: string[] };
       action: string;
       category: BehavioralUrge['category'];
       isAdaptive: boolean;
-    }> = [
+    }[] = [
       {
         keywords: { en: ['want to hide', 'stay home', 'avoid'], ru: ['спрятаться', 'остаться дома', 'избежать'] },
         action: 'Avoid the situation',
@@ -1259,11 +1259,11 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
     const lowerText = text.toLowerCase();
 
     for (const marker of severeMarkers) {
-      if (lowerText.includes(marker)) return 'severe';
+      if (lowerText.includes(marker)) {return 'severe';}
     }
 
     for (const marker of moderateMarkers) {
-      if (lowerText.includes(marker)) return 'moderate';
+      if (lowerText.includes(marker)) {return 'moderate';}
     }
 
     return 'mild';
@@ -1287,7 +1287,7 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
   ): number {
     let confidence = 0;
 
-    if (event) confidence += event.confidence * 0.3;
+    if (event) {confidence += event.confidence * 0.3;}
     if (thoughts.length > 0) {
       const avgThoughtConf = thoughts.reduce((sum, t) => sum + t.confidence, 0) / thoughts.length;
       confidence += avgThoughtConf * 0.4;
@@ -1361,7 +1361,7 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
   }
 
   private calculateEmotionalIntensity(emotions: EmotionalConsequence[]): number {
-    if (emotions.length === 0) return 0;
+    if (emotions.length === 0) {return 0;}
 
     let total = 0;
     let count = 0;
@@ -1474,7 +1474,7 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
   }
 
   private calculateEngagement(
-    messages: Array<{ text: string; timestamp: Date }>,
+    messages: { text: string; timestamp: Date }[],
     chains: ABCDChain[]
   ): number {
     // Based on message frequency and depth
@@ -1672,11 +1672,11 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
   private inferDisputationType(question: string): DisputationType {
     const lowerQ = question.toLowerCase();
 
-    if (lowerQ.includes('evidence')) return 'empirical';
-    if (lowerQ.includes('sense') || lowerQ.includes('logical')) return 'logical';
-    if (lowerQ.includes('helpful') || lowerQ.includes('helping')) return 'functional';
-    if (lowerQ.includes('worst') || lowerQ.includes('survive')) return 'philosophical';
-    if (lowerQ.includes('friend') || lowerQ.includes('kind')) return 'compassionate';
+    if (lowerQ.includes('evidence')) {return 'empirical';}
+    if (lowerQ.includes('sense') || lowerQ.includes('logical')) {return 'logical';}
+    if (lowerQ.includes('helpful') || lowerQ.includes('helping')) {return 'functional';}
+    if (lowerQ.includes('worst') || lowerQ.includes('survive')) {return 'philosophical';}
+    if (lowerQ.includes('friend') || lowerQ.includes('kind')) {return 'compassionate';}
 
     return 'empirical';
   }

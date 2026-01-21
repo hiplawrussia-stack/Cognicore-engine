@@ -23,11 +23,11 @@
  */
 
 import {
-  INarrativeExplanation,
-  INarrativeGenerator,
-  IExplanationResponse,
-  NarrativeStructure,
-  CognitiveStyle,
+  type INarrativeExplanation,
+  type INarrativeGenerator,
+  type IExplanationResponse,
+  type NarrativeStructure,
+  type CognitiveStyle,
 } from '../interfaces/IExplainability';
 
 // ============================================================================
@@ -578,14 +578,14 @@ export class NarrativeGenerator implements INarrativeGenerator {
       const topPositive = explanation.localExplanation.topPositiveFeatures[0];
       const topNegative = explanation.localExplanation.topNegativeFeatures[0];
 
-      variables['key_factor'] = topPositive?.featureNameRu || 'настроение';
-      variables['key_factor_value'] = String(topPositive?.featureValue || '');
-      variables['challenge'] = topNegative?.featureNameRu || '';
+      variables.key_factor = topPositive?.featureNameRu || 'настроение';
+      variables.key_factor_value = String(topPositive?.featureValue || '');
+      variables.challenge = topNegative?.featureNameRu || '';
 
       // Initial state (baseline)
-      variables['initial_state'] = 'нейтральное состояние';
-      variables['current_state'] = explanation.localExplanation.prediction;
-      variables['key_change'] = `изменение ${variables['key_factor']}`;
+      variables.initial_state = 'нейтральное состояние';
+      variables.current_state = explanation.localExplanation.prediction;
+      variables.key_change = `изменение ${variables.key_factor}`;
     }
 
     // From counterfactual explanation
@@ -593,7 +593,7 @@ export class NarrativeGenerator implements INarrativeGenerator {
       const easiest = explanation.counterfactualExplanation.easiestCounterfactual;
       const firstChange = easiest?.changes?.[0];
       if (firstChange) {
-        variables['action'] = firstChange.changeDescriptionRu || firstChange.changeDescription;
+        variables.action = firstChange.changeDescriptionRu || firstChange.changeDescription;
       }
     }
 
@@ -604,41 +604,41 @@ export class NarrativeGenerator implements INarrativeGenerator {
         const firstNode = primaryChain.nodes[0];
         const lastNode = primaryChain.nodes[primaryChain.nodes.length - 1];
         if (firstNode) {
-          variables['cause'] = firstNode.variableRu || firstNode.variable;
+          variables.cause = firstNode.variableRu || firstNode.variable;
         }
         if (lastNode) {
-          variables['effect'] = lastNode.variableRu || lastNode.variable;
+          variables.effect = lastNode.variableRu || lastNode.variable;
         }
       }
 
       const firstEdge = primaryChain?.edges?.[0];
       if (firstEdge) {
-        variables['mechanism'] = firstEdge.mechanismRu ||
+        variables.mechanism = firstEdge.mechanismRu ||
           firstEdge.mechanism ||
           'прямое влияние';
-        variables['strength'] = `${Math.round(firstEdge.strength * 100)}%`;
+        variables.strength = `${Math.round(firstEdge.strength * 100)}%`;
       }
     }
 
     // From user explanation
     if (explanation.userExplanation) {
-      variables['observation'] = explanation.userExplanation.summaryRu || explanation.userExplanation.summary;
-      variables['recommendation'] = explanation.userExplanation.actionableAdviceRu?.[0] ||
+      variables.observation = explanation.userExplanation.summaryRu || explanation.userExplanation.summary;
+      variables.recommendation = explanation.userExplanation.actionableAdviceRu?.[0] ||
         explanation.userExplanation.actionableAdvice?.[0] ||
         'продолжить практику';
-      variables['reasoning'] = explanation.userExplanation.reasoningRu || explanation.userExplanation.reasoning;
+      variables.reasoning = explanation.userExplanation.reasoningRu || explanation.userExplanation.reasoning;
     }
 
     // Defaults
-    variables['feeling'] = variables['key_factor'] || 'текущее состояние';
-    variables['technique'] = variables['recommendation'] || 'рекомендуемая техника';
-    variables['stats'] = 'эффективность 70%+';
-    variables['analogy'] = 'домино - одно толкает другое';
-    variables['expected_effect'] = 'улучшение состояния';
+    variables.feeling = variables.key_factor || 'текущее состояние';
+    variables.technique = variables.recommendation || 'рекомендуемая техника';
+    variables.stats = 'эффективность 70%+';
+    variables.analogy = 'домино - одно толкает другое';
+    variables.expected_effect = 'улучшение состояния';
 
     // Ensure action is set
-    if (!variables['action']) {
-      variables['action'] = variables['recommendation'] || 'начать практику';
+    if (!variables.action) {
+      variables.action = variables.recommendation || 'начать практику';
     }
 
     return variables;
@@ -676,7 +676,7 @@ export class NarrativeGenerator implements INarrativeGenerator {
         case 'visual':
           // Prefer templates with emojis
           templateIndex = templates.findIndex(t => /[\u{1F300}-\u{1F9FF}]/u.test(t));
-          if (templateIndex === -1) templateIndex = 0;
+          if (templateIndex === -1) {templateIndex = 0;}
           break;
       }
     }
@@ -858,7 +858,7 @@ export class NarrativeGenerator implements INarrativeGenerator {
 
     const truncateToWords = (text: string, maxW: number): string => {
       const words = text.split(/\s+/);
-      if (words.length <= maxW) return text;
+      if (words.length <= maxW) {return text;}
       return words.slice(0, maxW).join(' ') + '...';
     };
 

@@ -543,7 +543,7 @@ export class VoiceInputAdapter implements IVoiceInputAdapter {
       const actual = actuals[i];
 
       // Skip if either is undefined
-      if (!pred || !actual) continue;
+      if (!pred || !actual) {continue;}
 
       // Error based on VAD distance
       const vadError = Math.sqrt(
@@ -731,7 +731,7 @@ export class VoiceInputAdapter implements IVoiceInputAdapter {
   }
 
   private resample(buffer: Float32Array, fromRate: number, toRate: number): Float32Array {
-    if (fromRate === toRate) return buffer;
+    if (fromRate === toRate) {return buffer;}
 
     const ratio = toRate / fromRate;
     const newLength = Math.floor(buffer.length * ratio);
@@ -1005,12 +1005,12 @@ export class VoiceInputAdapter implements IVoiceInputAdapter {
   private analyzePitchPattern(pitch: IAcousticFeatures['pitch']): IProsodyFeatures['pitchPattern'] {
     const cv = pitch.stdF0 / (pitch.meanF0 || 1);
 
-    if (cv < 0.1) return 'monotone';
-    if (cv > 0.3) return 'varied';
+    if (cv < 0.1) {return 'monotone';}
+    if (cv > 0.3) {return 'varied';}
 
     // Check trend
     const contour = pitch.contour.filter(f => f > 0);
-    if (contour.length < 5) return 'monotone'; // Not enough data for pattern detection
+    if (contour.length < 5) {return 'monotone';} // Not enough data for pattern detection
 
     const firstHalf = contour.slice(0, contour.length / 2);
     const secondHalf = contour.slice(contour.length / 2);
@@ -1018,8 +1018,8 @@ export class VoiceInputAdapter implements IVoiceInputAdapter {
     const firstMean = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
     const secondMean = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
 
-    if (secondMean > firstMean * 1.1) return 'rising';
-    if (secondMean < firstMean * 0.9) return 'falling';
+    if (secondMean > firstMean * 1.1) {return 'rising';}
+    if (secondMean < firstMean * 0.9) {return 'falling';}
 
     return 'varied';
   }
@@ -1029,24 +1029,24 @@ export class VoiceInputAdapter implements IVoiceInputAdapter {
       ? features.temporal.pauseDuration / features.temporal.pauseCount / features.temporal.meanPauseDuration
       : 1;
 
-    if (pauseVariability > 1.5) return 'irregular';
-    if (features.temporal.pauseCount / features.temporal.duration > 0.5) return 'hesitant';
-    if (features.temporal.speechRate > 5) return 'rushed';
+    if (pauseVariability > 1.5) {return 'irregular';}
+    if (features.temporal.pauseCount / features.temporal.duration > 0.5) {return 'hesitant';}
+    if (features.temporal.speechRate > 5) {return 'rushed';}
 
     return 'regular';
   }
 
   private determineIntonationType(pitch: IAcousticFeatures['pitch']): IProsodyFeatures['intonationType'] {
     const contour = pitch.contour.filter(f => f > 0);
-    if (contour.length < 3) return 'neutral';
+    if (contour.length < 3) {return 'neutral';}
 
     const lastThird = contour.slice(-Math.floor(contour.length / 3));
     const lastMean = lastThird.reduce((a, b) => a + b, 0) / lastThird.length;
     const overallMean = pitch.meanF0;
 
-    if (lastMean > overallMean * 1.2) return 'interrogative';
-    if (lastMean < overallMean * 0.8) return 'declarative';
-    if (pitch.rangeF0 > pitch.meanF0 * 0.5) return 'exclamatory';
+    if (lastMean > overallMean * 1.2) {return 'interrogative';}
+    if (lastMean < overallMean * 0.8) {return 'declarative';}
+    if (pitch.rangeF0 > pitch.meanF0 * 0.5) {return 'exclamatory';}
 
     return 'neutral';
   }
@@ -1205,11 +1205,11 @@ export class VoiceInputAdapter implements IVoiceInputAdapter {
     let score = 0;
 
     positiveWords.forEach(w => {
-      if (lower.includes(w)) score += 0.2;
+      if (lower.includes(w)) {score += 0.2;}
     });
 
     negativeWords.forEach(w => {
-      if (lower.includes(w)) score -= 0.2;
+      if (lower.includes(w)) {score -= 0.2;}
     });
 
     return Math.max(-1, Math.min(1, score));
@@ -1232,7 +1232,7 @@ export class VoiceInputAdapter implements IVoiceInputAdapter {
     Object.entries(emotionKeywords).forEach(([emotion, keywords]) => {
       let count = 0;
       keywords.forEach(kw => {
-        if (lower.includes(kw)) count++;
+        if (lower.includes(kw)) {count++;}
       });
       if (count > 0) {
         emotions.set(emotion, count);
@@ -1297,15 +1297,15 @@ export class VoiceInputAdapter implements IVoiceInputAdapter {
 
     // Estimate arousal from emotions
     let arousal = 0;
-    if (emotions.has('anger')) arousal += emotions.get('anger')! * 0.8;
-    if (emotions.has('fear')) arousal += emotions.get('fear')! * 0.6;
-    if (emotions.has('joy')) arousal += emotions.get('joy')! * 0.4;
-    if (emotions.has('sadness')) arousal -= emotions.get('sadness')! * 0.4;
+    if (emotions.has('anger')) {arousal += emotions.get('anger')! * 0.8;}
+    if (emotions.has('fear')) {arousal += emotions.get('fear')! * 0.6;}
+    if (emotions.has('joy')) {arousal += emotions.get('joy')! * 0.4;}
+    if (emotions.has('sadness')) {arousal -= emotions.get('sadness')! * 0.4;}
 
     // Dominance from emotion type
     let dominance = 0.5;
-    if (emotions.has('anger')) dominance += emotions.get('anger')! * 0.3;
-    if (emotions.has('fear')) dominance -= emotions.get('fear')! * 0.3;
+    if (emotions.has('anger')) {dominance += emotions.get('anger')! * 0.3;}
+    if (emotions.has('fear')) {dominance -= emotions.get('fear')! * 0.3;}
 
     return {
       valence: Math.max(-1, Math.min(1, valence)),
@@ -1334,7 +1334,7 @@ export class VoiceInputAdapter implements IVoiceInputAdapter {
     const textPrimary = this.getTextPrimaryEmotion(text);
 
     // Same emotion = high agreement
-    if (voicePrimary === textPrimary) return 1.0;
+    if (voicePrimary === textPrimary) {return 1.0;}
 
     // Similar valence = medium agreement
     const voiceValence = voice.vad.valence;

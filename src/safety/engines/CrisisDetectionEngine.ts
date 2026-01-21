@@ -17,11 +17,11 @@
  */
 
 import {
-  ICrisisDetectionService,
-  ICrisisDetectionResult,
-  ISafetyContext,
-  ISafetyAction,
-  RiskLevel,
+  type ICrisisDetectionService,
+  type ICrisisDetectionResult,
+  type ISafetyContext,
+  type ISafetyAction,
+  type RiskLevel,
 } from '../interfaces/ISafetyEnvelope';
 
 // ============================================================================
@@ -264,7 +264,7 @@ export class CrisisDetectionEngine implements ICrisisDetectionService {
     const indicators: string[] = [];
     let maxRiskLevel: RiskLevel = 'none';
     let crisisType: ICrisisDetectionResult['crisisType'];
-    const assessmentMethods: Set<string> = new Set(['keyword']);
+    const assessmentMethods = new Set<string>(['keyword']);
 
     // 1. Keyword-based detection (primary)
     const keywordResult = this.detectByKeywords(input);
@@ -483,7 +483,7 @@ export class CrisisDetectionEngine implements ICrisisDetectionService {
    * Check for escalating risk pattern
    */
   private isEscalatingPattern(levels: RiskLevel[]): boolean {
-    if (levels.length < 3) return false;
+    if (levels.length < 3) {return false;}
 
     const riskOrder: Record<RiskLevel, number> = {
       none: 0, low: 1, moderate: 2, high: 3, critical: 4

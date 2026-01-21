@@ -22,27 +22,27 @@
 
 import { randomUUID } from 'crypto';
 import {
-  IExplainabilityService,
-  IExplanationRequest,
-  IExplanationResponse,
-  ISHAPExplanation,
-  ICounterfactualExplanation,
-  IGlobalExplanation,
-  IGlobalFeatureImportance,
-  IDecisionRule,
-  IClinicianExplanation,
-  IUserExplanation,
-  IUserFactor,
-  ICausalExplanation,
-  ICausalChain,
-  INarrativeExplanation,
-  IExplanationEffectiveness,
-  ExplanationAudience,
-  ExplanationLevel,
-  EUAIActRiskLevel,
-  NarrativeStructure,
-  CognitiveStyle,
-  CounterfactualFeasibility,
+  type IExplainabilityService,
+  type IExplanationRequest,
+  type IExplanationResponse,
+  type ISHAPExplanation,
+  type ICounterfactualExplanation,
+  type IGlobalExplanation,
+  type IGlobalFeatureImportance,
+  type IDecisionRule,
+  type IClinicianExplanation,
+  type IUserExplanation,
+  type IUserFactor,
+  type ICausalExplanation,
+  type ICausalChain,
+  type INarrativeExplanation,
+  type IExplanationEffectiveness,
+  type ExplanationAudience,
+  type ExplanationLevel,
+  type EUAIActRiskLevel,
+  type NarrativeStructure,
+  type CognitiveStyle,
+  type CounterfactualFeasibility,
   DEFAULT_EXPLAINABILITY_CONFIG,
 } from '../interfaces/IExplainability';
 import {
@@ -69,12 +69,12 @@ export class ExplainabilityService implements IExplainabilityService {
   private narrativeGenerator: NarrativeGenerator;
 
   // Caches
-  private globalExplanationCache: Map<string, {
+  private globalExplanationCache = new Map<string, {
     explanation: IGlobalExplanation;
     timestamp: number;
-  }> = new Map();
+  }>();
 
-  private effectivenessStore: Map<string, IExplanationEffectiveness> = new Map();
+  private effectivenessStore = new Map<string, IExplanationEffectiveness>();
 
   // Configuration
   private config = DEFAULT_EXPLAINABILITY_CONFIG;
@@ -233,7 +233,7 @@ export class ExplainabilityService implements IExplainabilityService {
   ): Promise<IGlobalExplanation> {
     // Check cache
     const cached = this.getCachedGlobalExplanation(predictionType);
-    if (cached) return cached;
+    if (cached) {return cached;}
 
     // Generate new global explanation
     const featureImportance = this.calculateGlobalFeatureImportance(predictionType);
@@ -668,10 +668,10 @@ provide clinical diagnosis or treatment recommendations.
     language: 'en' | 'ru',
     ageGroup: 'child' | 'teen' | 'adult'
   ): string | undefined {
-    if (!localExplanation || ageGroup === 'child') return undefined;
+    if (!localExplanation || ageGroup === 'child') {return undefined;}
 
     const topFactor = localExplanation.topPositiveFeatures[0];
-    if (!topFactor) return undefined;
+    if (!topFactor) {return undefined;}
 
     if (language === 'ru') {
       return ageGroup === 'teen'
@@ -751,7 +751,7 @@ provide clinical diagnosis or treatment recommendations.
 
   private formatForClinician(explanation: IExplanationResponse, _level: ExplanationLevel): string {
     const clinician = explanation.clinicianExplanation;
-    if (!clinician) return 'No clinician explanation available';
+    if (!clinician) {return 'No clinician explanation available';}
 
     return `
 ═══════════════════════════════════════════════
@@ -849,7 +849,7 @@ ${clinician.disclaimer}
   async recordExplanationFeedback(
     feedback: Partial<IExplanationEffectiveness>
   ): Promise<void> {
-    if (!feedback.explanationId) return;
+    if (!feedback.explanationId) {return;}
 
     const existing = this.effectivenessStore.get(feedback.explanationId);
 
@@ -882,7 +882,7 @@ ${clinician.disclaimer}
    */
   getCachedGlobalExplanation(predictionType: string): IGlobalExplanation | null {
     const cached = this.globalExplanationCache.get(predictionType);
-    if (!cached) return null;
+    if (!cached) {return null;}
 
     const age = Date.now() - cached.timestamp;
     if (age > this.config.cacheExpirationMs) {
@@ -930,10 +930,10 @@ ${clinician.disclaimer}
   }
 
   private getConfidenceLabel(confidence: number): string {
-    if (confidence >= 0.9) return 'Very High';
-    if (confidence >= 0.7) return 'High';
-    if (confidence >= 0.5) return 'Medium';
-    if (confidence >= 0.3) return 'Low';
+    if (confidence >= 0.9) {return 'Very High';}
+    if (confidence >= 0.7) {return 'High';}
+    if (confidence >= 0.5) {return 'Medium';}
+    if (confidence >= 0.3) {return 'Low';}
     return 'Very Low';
   }
 

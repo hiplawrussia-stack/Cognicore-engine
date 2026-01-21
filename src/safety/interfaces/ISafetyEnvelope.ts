@@ -974,6 +974,6 @@ export interface ISafetyMetrics {
 /**
  * Generate unique ID for safety entities
  */
-export function generateSafetyId(prefix: string = 'SAFE'): string {
+export function generateSafetyId(prefix = 'SAFE'): string {
   return `${prefix}-${randomUUID()}`;
 }

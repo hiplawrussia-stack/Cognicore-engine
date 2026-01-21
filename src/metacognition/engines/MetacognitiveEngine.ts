@@ -196,7 +196,7 @@ export class MetacognitiveEngine implements IMetacognitiveTherapyEngine {
     }
     if (subscaleScores.negativeUncontrollabilityDanger > MCQ30_CLINICAL_CUTOFFS.negativeUncontrollabilityDanger) {
       clinicalFlags.push('Elevated beliefs about uncontrollability and danger');
-      if (!primaryConcern) primaryConcern = 'uncontrollability_danger';
+      if (!primaryConcern) {primaryConcern = 'uncontrollability_danger';}
     }
     if (subscaleScores.cognitiveConfidence > MCQ30_CLINICAL_CUTOFFS.cognitiveConfidence) {
       clinicalFlags.push('Low cognitive confidence');
@@ -333,7 +333,7 @@ export class MetacognitiveEngine implements IMetacognitiveTherapyEngine {
     let selectedMetaphor = suitableMetaphors[0];
     if (preferences?.preferredMetaphor) {
       const preferred = suitableMetaphors.find(m => m.id === preferences.preferredMetaphor);
-      if (preferred) selectedMetaphor = preferred;
+      if (preferred) {selectedMetaphor = preferred;}
     }
 
     // Build instructions
@@ -785,8 +785,8 @@ export class MetacognitiveEngine implements IMetacognitiveTherapyEngine {
     }
 
     let primary: string | undefined;
-    if (positive_worry) primary = 'Positive worry belief';
-    else if (uncontrollability) primary = 'Uncontrollability belief';
+    if (positive_worry) {primary = 'Positive worry belief';}
+    else if (uncontrollability) {primary = 'Uncontrollability belief';}
 
     return { positive_worry, uncontrollability, primary };
   }

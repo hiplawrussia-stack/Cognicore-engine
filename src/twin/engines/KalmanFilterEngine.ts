@@ -20,10 +20,10 @@
  */
 
 import {
-  IKalmanFilterConfig,
-  IKalmanFilterState,
-  IKalmanFilterService,
-  IEnsembleKalmanConfig,
+  type IKalmanFilterConfig,
+  type IKalmanFilterState,
+  type IKalmanFilterService,
+  type IEnsembleKalmanConfig,
 } from '../interfaces/IDigitalTwin';
 
 import { secureRandom } from '../../utils/SecureRandom';
@@ -39,7 +39,7 @@ function matmul(A: number[][], B: number[][]): number[][] {
   const rowsA = A.length;
   const firstRowA = A[0];
   const firstRowB = B[0];
-  if (!firstRowA || !firstRowB) return [];
+  if (!firstRowA || !firstRowB) {return [];}
   const colsA = firstRowA.length;
   const colsB = firstRowB.length;
 
@@ -48,11 +48,11 @@ function matmul(A: number[][], B: number[][]): number[][] {
   for (let i = 0; i < rowsA; i++) {
     const rowA = A[i];
     const rowR = result[i];
-    if (!rowA || !rowR) continue;
+    if (!rowA || !rowR) {continue;}
     for (let j = 0; j < colsB; j++) {
       for (let k = 0; k < colsA; k++) {
         const rowB = B[k];
-        if (!rowB) continue;
+        if (!rowB) {continue;}
         rowR[j] = (rowR[j] ?? 0) + (rowA[k] ?? 0) * (rowB[j] ?? 0);
       }
     }
@@ -67,13 +67,13 @@ function matmul(A: number[][], B: number[][]): number[][] {
 function transpose(A: number[][]): number[][] {
   const rows = A.length;
   const firstRow = A[0];
-  if (!firstRow) return [];
+  if (!firstRow) {return [];}
   const cols = firstRow.length;
   const result: number[][] = Array(cols).fill(null).map(() => Array(rows).fill(0) as number[]);
 
   for (let i = 0; i < rows; i++) {
     const rowA = A[i];
-    if (!rowA) continue;
+    if (!rowA) {continue;}
     for (let j = 0; j < cols; j++) {
       const rowR = result[j];
       if (rowR) {
@@ -157,7 +157,7 @@ function matinv(A: number[][]): number[][] {
   // Forward elimination
   for (let i = 0; i < n; i++) {
     const rowI = augmented[i];
-    if (!rowI) continue;
+    if (!rowI) {continue;}
 
     // Find pivot
     let maxRow = i;
@@ -174,7 +174,7 @@ function matinv(A: number[][]): number[][] {
     }
 
     const rowICurrent = augmented[i];
-    if (!rowICurrent) continue;
+    if (!rowICurrent) {continue;}
 
     // Singular matrix check
     if (Math.abs(rowICurrent[i] ?? 0) < 1e-10) {
@@ -186,7 +186,7 @@ function matinv(A: number[][]): number[][] {
     for (let k = 0; k < n; k++) {
       if (k !== i) {
         const rowK = augmented[k];
-        if (!rowK) continue;
+        if (!rowK) {continue;}
         const factor = (rowK[i] ?? 0) / (rowICurrent[i] ?? 1);
         for (let j = 0; j < 2 * n; j++) {
           rowK[j] = (rowK[j] ?? 0) - factor * (rowICurrent[j] ?? 0);
@@ -384,7 +384,7 @@ export class KalmanFilterEngine implements IKalmanFilterService {
     states: IKalmanFilterState[],
     config: IKalmanFilterConfig
   ): IKalmanFilterState[] {
-    if (states.length < 2) return states;
+    if (states.length < 2) {return states;}
 
     const smoothed = states.map(s => ({ ...s }));
     const A = config.stateTransitionMatrix;
@@ -393,7 +393,7 @@ export class KalmanFilterEngine implements IKalmanFilterService {
     for (let k = states.length - 2; k >= 0; k--) {
       const current = smoothed[k];
       const next = smoothed[k + 1];
-      if (!current || !next) continue;
+      if (!current || !next) {continue;}
 
       // Smoother gain: C = P · Aᵀ · (P⁻)⁻¹
       const PAt = matmul(current.errorCovariance, transpose(A));
@@ -428,14 +428,14 @@ export class KalmanFilterEngine implements IKalmanFilterService {
     innovations: number[][],
     config: IKalmanFilterConfig
   ): number[][] {
-    if (innovations.length < 10) return config.processNoiseCovariance;
+    if (innovations.length < 10) {return config.processNoiseCovariance;}
 
     const H = config.observationMatrix;
     const R = config.measurementNoiseCovariance;
 
     // Sample innovation covariance
     const firstInnovation = innovations[0];
-    if (!firstInnovation) return config.processNoiseCovariance;
+    if (!firstInnovation) {return config.processNoiseCovariance;}
 
     const meanInnovation = firstInnovation.map((_, j) =>
       innovations.reduce((sum, inn) => sum + (inn[j] ?? 0), 0) / innovations.length
@@ -481,7 +481,7 @@ export class KalmanFilterEngine implements IKalmanFilterService {
     config: IKalmanFilterConfig
   ): number[][] {
     const firstInnovation = innovations[0];
-    if (innovations.length < 10 || !firstInnovation) return config.measurementNoiseCovariance;
+    if (innovations.length < 10 || !firstInnovation) {return config.measurementNoiseCovariance;}
 
     // Sample covariance of innovations
     const meanInnovation = firstInnovation.map((_, j) =>
@@ -586,7 +586,7 @@ export class EnsembleKalmanFilter {
   ): void {
     const N = this.config.ensembleSize;
     const firstMember = this.ensemble[0];
-    if (!firstMember) return;
+    if (!firstMember) {return;}
     const stateSize = firstMember.length;
     const obsSize = measurement.length;
 
@@ -596,7 +596,7 @@ export class EnsembleKalmanFilter {
     // Ensemble of predicted observations
     const predictedObs = this.ensemble.map(member => observationOperator(member));
     const firstPredObs = predictedObs[0];
-    if (!firstPredObs) return;
+    if (!firstPredObs) {return;}
     const meanObs = firstPredObs.map((_, j) =>
       predictedObs.reduce((sum, obs) => sum + (obs[j] ?? 0), 0) / N
     );
@@ -614,7 +614,7 @@ export class EnsembleKalmanFilter {
     const PHt: number[][] = Array(stateSize).fill(null).map(() => Array(obsSize).fill(0) as number[]);
     for (let i = 0; i < stateSize; i++) {
       const phtRow = PHt[i];
-      if (!phtRow) continue;
+      if (!phtRow) {continue;}
       for (let j = 0; j < obsSize; j++) {
         for (let k = 0; k < N; k++) {
           const stateAnom = stateAnomalies[k];
@@ -629,7 +629,7 @@ export class EnsembleKalmanFilter {
     const HPHt: number[][] = Array(obsSize).fill(null).map(() => Array(obsSize).fill(0) as number[]);
     for (let i = 0; i < obsSize; i++) {
       const hphtRow = HPHt[i];
-      if (!hphtRow) continue;
+      if (!hphtRow) {continue;}
       for (let j = 0; j < obsSize; j++) {
         for (let k = 0; k < N; k++) {
           const obsAnom = obsAnomalies[k];
@@ -683,14 +683,14 @@ export class EnsembleKalmanFilter {
     const mean = this.calculateEnsembleMean();
     const N = this.config.ensembleSize;
     const firstMember = this.ensemble[0];
-    if (!firstMember) return [];
+    if (!firstMember) {return [];}
     const stateSize = firstMember.length;
 
     const cov: number[][] = Array(stateSize).fill(null).map(() => Array(stateSize).fill(0) as number[]);
 
     for (let i = 0; i < stateSize; i++) {
       const covRow = cov[i];
-      if (!covRow) continue;
+      if (!covRow) {continue;}
       for (let j = 0; j < stateSize; j++) {
         for (let k = 0; k < N; k++) {
           const member = this.ensemble[k];
@@ -710,7 +710,7 @@ export class EnsembleKalmanFilter {
   private calculateEnsembleMean(): number[] {
     const N = this.config.ensembleSize;
     const firstMember = this.ensemble[0];
-    if (!firstMember) return [];
+    if (!firstMember) {return [];}
     return firstMember.map((_, j) =>
       this.ensemble.reduce((sum, member) => sum + (member[j] ?? 0), 0) / N
     );

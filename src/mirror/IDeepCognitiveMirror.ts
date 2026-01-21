@@ -107,11 +107,11 @@ export interface TextSpan {
  */
 export interface EmotionalConsequence {
   readonly id: string;
-  readonly emotions: Array<{
+  readonly emotions: {
     type: EmotionType;
     intensity: number;
     confidence: number;
-  }>;
+  }[];
   readonly behavioralUrges: BehavioralUrge[];
   readonly physiologicalSigns?: string[];
   readonly linkedThoughtId?: string;
@@ -375,16 +375,16 @@ export interface SessionAnalysisResult {
 
   // Session dynamics
   readonly dynamics: {
-    readonly emotionalTrajectory: Array<{
+    readonly emotionalTrajectory: {
       timestamp: Date;
       valence: number;
       arousal: number;
-    }>;
-    readonly insightMoments: Array<{
+    }[];
+    readonly insightMoments: {
       timestamp: Date;
       type: InsightType;
       description: string;
-    }>;
+    }[];
     readonly engagementLevel: number;
   };
 
@@ -710,7 +710,7 @@ export interface IDeepCognitiveMirror {
    * Analyze multiple messages as a session
    */
   analyzeSession(
-    messages: Array<{ text: string; timestamp: Date }>,
+    messages: { text: string; timestamp: Date }[],
     userId: string | number
   ): Promise<SessionAnalysisResult>;
 

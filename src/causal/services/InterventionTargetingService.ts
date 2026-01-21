@@ -26,17 +26,17 @@
  */
 
 import {
-  ICausalGraph,
-  ICausalNode,
-  ICausalObservation,
-  IInterventionTarget,
-  IInterventionTargetingService,
-  IInterventionConstraints,
-  IInterventionSimulation,
-  ISimulatedTrajectory,
-  IDoOperatorResult,
-  INodeEffect,
-  CausalInterventionType,
+  type ICausalGraph,
+  type ICausalNode,
+  type ICausalObservation,
+  type IInterventionTarget,
+  type IInterventionTargetingService,
+  type IInterventionConstraints,
+  type IInterventionSimulation,
+  type ISimulatedTrajectory,
+  type IDoOperatorResult,
+  type INodeEffect,
+  type CausalInterventionType,
 } from '../interfaces/ICausalGraph';
 
 import { secureRandom } from '../../utils/SecureRandom';
@@ -119,18 +119,18 @@ export class InterventionTargetingService implements IInterventionTargetingServi
 
     if (constraints) {
       const filtered = targets.filter(t => {
-        if (constraints.excludedNodes?.includes(t.nodeId)) return false;
+        if (constraints.excludedNodes?.includes(t.nodeId)) {return false;}
         if (constraints.maxComplexity !== undefined &&
-            t.requiredUserEngagement > constraints.maxComplexity) return false;
+            t.requiredUserEngagement > constraints.maxComplexity) {return false;}
         if (constraints.timeConstraint !== undefined &&
-            t.estimatedTimeToEffect > constraints.timeConstraint) return false;
+            t.estimatedTimeToEffect > constraints.timeConstraint) {return false;}
         if (constraints.preferredTypes?.length &&
-            !constraints.preferredTypes.includes(t.interventionType)) return false;
+            !constraints.preferredTypes.includes(t.interventionType)) {return false;}
         return true;
       });
 
       const firstFiltered = filtered[0];
-      if (filtered.length > 0 && firstFiltered) return firstFiltered;
+      if (filtered.length > 0 && firstFiltered) {return firstFiltered;}
     }
 
     if (targets.length === 0) {
@@ -147,7 +147,7 @@ export class InterventionTargetingService implements IInterventionTargetingServi
   async rankTargets(
     graph: ICausalGraph,
     goalNodeId: string,
-    topK: number = 5
+    topK = 5
   ): Promise<IInterventionTarget[]> {
     const goalNode = graph.nodes.get(goalNodeId);
     if (!goalNode) {
@@ -164,7 +164,7 @@ export class InterventionTargetingService implements IInterventionTargetingServi
 
     for (const candidateId of ancestors) {
       const candidateNode = graph.nodes.get(candidateId);
-      if (!candidateNode || !candidateNode.isManipulable) continue;
+      if (!candidateNode?.isManipulable) {continue;}
 
       const interventionTypes = NODE_INTERVENTION_MAP[candidateId] || ['psychoeducation'];
 
@@ -327,9 +327,9 @@ export class InterventionTargetingService implements IInterventionTargetingServi
 
     let successCount = 0;
     for (const finalValue of targetFinalValues) {
-      if (finalValue === undefined) continue;
-      if (isNegativeTarget && finalValue < baseline) successCount++;
-      else if (!isNegativeTarget && finalValue > baseline) successCount++;
+      if (finalValue === undefined) {continue;}
+      if (isNegativeTarget && finalValue < baseline) {successCount++;}
+      else if (!isNegativeTarget && finalValue > baseline) {successCount++;}
     }
 
     return {
@@ -406,7 +406,7 @@ export class InterventionTargetingService implements IInterventionTargetingServi
     while (stack.length > 0) {
       const current = stack.pop()!;
 
-      if (visited.has(current)) continue;
+      if (visited.has(current)) {continue;}
       visited.add(current);
 
       const parents = graph.reverseAdjacency.get(current) || [];
@@ -428,7 +428,7 @@ export class InterventionTargetingService implements IInterventionTargetingServi
     while (stack.length > 0) {
       const current = stack.pop()!;
 
-      if (visited.has(current)) continue;
+      if (visited.has(current)) {continue;}
       visited.add(current);
 
       const children = graph.adjacencyList.get(current) || [];
@@ -473,12 +473,12 @@ export class InterventionTargetingService implements IInterventionTargetingServi
     graph: ICausalGraph,
     sourceId: string,
     targetId: string,
-    maxLength: number = 5
+    maxLength = 5
   ): string[][] {
     const paths: string[][] = [];
 
     const dfs = (current: string, path: string[]): void => {
-      if (path.length > maxLength) return;
+      if (path.length > maxLength) {return;}
 
       if (current === targetId) {
         paths.push([...path]);
@@ -523,12 +523,12 @@ export class InterventionTargetingService implements IInterventionTargetingServi
     sourceId: string,
     targetId: string,
     blocked: Set<string>,
-    maxLength: number = 5
+    maxLength = 5
   ): string[][] {
     const paths: string[][] = [];
 
     const dfs = (current: string, path: string[]): void => {
-      if (path.length > maxLength) return;
+      if (path.length > maxLength) {return;}
 
       if (current === targetId) {
         paths.push([...path]);
@@ -633,7 +633,7 @@ export class InterventionTargetingService implements IInterventionTargetingServi
     for (const descendantId of descendants) {
       const paths = this.findAllDirectedPaths(graph, interventionNodeId, descendantId);
 
-      if (paths.length === 0) continue;
+      if (paths.length === 0) {continue;}
 
       let totalEffect = 0;
       let minPathLength = Infinity;
@@ -705,7 +705,7 @@ export class InterventionTargetingService implements IInterventionTargetingServi
       let sign = 1;
       for (let i = 0; i < path.length - 1; i++) {
         const edge = graph.edges.get(`${path[i]}->${path[i + 1]}`);
-        if (edge && edge.strength < 0) sign *= -1;
+        if (edge && edge.strength < 0) {sign *= -1;}
       }
       return sign;
     });
@@ -785,13 +785,13 @@ export class InterventionTargetingService implements IInterventionTargetingServi
     for (let t = 1; t < timepoints.length; t++) {
       const currentTime = timepoints[t];
       const prevTime = timepoints[t - 1];
-      if (currentTime === undefined || prevTime === undefined) continue;
+      if (currentTime === undefined || prevTime === undefined) {continue;}
       const dt = currentTime - prevTime;
 
       for (const nodeId of graph.topologicalOrder) {
         const node = graph.nodes.get(nodeId);
         const prevValues = nodeValues.get(nodeId);
-        if (!node || !prevValues) continue;
+        if (!node || !prevValues) {continue;}
         const prevValue = prevValues[prevValues.length - 1] ?? node.value;
 
         let newValue = prevValue;
@@ -807,7 +807,7 @@ export class InterventionTargetingService implements IInterventionTargetingServi
         for (const parentId of parents) {
           const edge = graph.edges.get(`${parentId}->${nodeId}`);
           const parentValues = nodeValues.get(parentId);
-          if (!parentValues) continue;
+          if (!parentValues) {continue;}
           const parentPrev = parentValues[parentValues.length - 1] ?? 0;
           const parentPrevPrev = parentValues.length > 1 ?
             (parentValues[parentValues.length - 2] ?? parentPrev) : parentPrev;
@@ -872,12 +872,12 @@ export class InterventionTargetingService implements IInterventionTargetingServi
   }
 
   private mean(values: number[]): number {
-    if (values.length === 0) return 0;
+    if (values.length === 0) {return 0;}
     return values.reduce((a, b) => a + b, 0) / values.length;
   }
 
   private percentile(values: number[], p: number): number {
-    if (values.length === 0) return 0;
+    if (values.length === 0) {return 0;}
     const sorted = [...values].sort((a, b) => a - b);
     const index = Math.floor((p / 100) * sorted.length);
     return sorted[Math.min(index, sorted.length - 1)] ?? 0;

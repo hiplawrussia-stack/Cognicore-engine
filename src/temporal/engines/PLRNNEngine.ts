@@ -70,8 +70,8 @@ export class PLRNNEngine implements IPLRNNEngine {
   // Training state
   private trainingHistory: number[] = [];
   private adamState: {
-    m: { [key: string]: number[][] };
-    v: { [key: string]: number[][] };
+    m: Record<string, number[][]>;
+    v: Record<string, number[][]>;
     t: number;
   } | null = null;
 
@@ -433,7 +433,7 @@ export class PLRNNEngine implements IPLRNNEngine {
    * Call this after each observation to maintain state synchronization
    */
   updateKalmanFormerState(observation: number[], timestamp: Date): void {
-    if (!this.kalmanFormer) return;
+    if (!this.kalmanFormer) {return;}
 
     if (!this.kalmanFormerState) {
       // Initialize with observation
@@ -489,7 +489,7 @@ export class PLRNNEngine implements IPLRNNEngine {
 
     for (let i = 0; i < n; i++) {
       const row = W[i];
-      if (!row) continue;
+      if (!row) {continue;}
       for (let j = 0; j < n; j++) {
         const weight = row[j] ?? 0;
         if (i !== j && Math.abs(weight) > significanceThreshold) {
@@ -583,7 +583,7 @@ export class PLRNNEngine implements IPLRNNEngine {
     for (let t = 0; t < horizon; t++) {
       const intState = interventionTrajectory.trajectory[t];
       const baseState = baselineTrajectory.trajectory[t];
-      if (!intState || !baseState) continue;
+      if (!intState || !baseState) {continue;}
       const effect = Math.abs(
         (intState.observedState[targetIdx] ?? 0) -
         (baseState.observedState[targetIdx] ?? 0)
@@ -595,7 +595,7 @@ export class PLRNNEngine implements IPLRNNEngine {
     }
 
     // Identify side effects (unintended changes > 0.1)
-    const sideEffects: Array<{ dimension: string; effect: number }> = [];
+    const sideEffects: { dimension: string; effect: number }[] = [];
     effects.forEach((effect, dimension) => {
       if (dimension !== target && Math.abs(effect) > 0.1) {
         sideEffects.push({ dimension, effect });
@@ -607,7 +607,7 @@ export class PLRNNEngine implements IPLRNNEngine {
     for (let t = Math.floor(timeToPeak / this.config.dt); t < horizon; t++) {
       const intState = interventionTrajectory.trajectory[t];
       const baseState = baselineTrajectory.trajectory[t];
-      if (!intState || !baseState) continue;
+      if (!intState || !baseState) {continue;}
       const effect = Math.abs(
         (intState.observedState[targetIdx] ?? 0) -
         (baseState.observedState[targetIdx] ?? 0)
@@ -773,7 +773,7 @@ export class PLRNNEngine implements IPLRNNEngine {
 
       // Calculate loss
       const target = observations[t + 1];
-      if (!target) continue;
+      if (!target) {continue;}
       const loss = this.calculateLoss([predicted.observedState], [target]);
       totalLoss += loss;
 
@@ -839,7 +839,7 @@ export class PLRNNEngine implements IPLRNNEngine {
     for (let t = 0; t < predicted.length; t++) {
       const predRow = predicted[t];
       const actualRow = actual[t];
-      if (!predRow || !actualRow) continue;
+      if (!predRow || !actualRow) {continue;}
       for (let i = 0; i < predRow.length; i++) {
         const diff = (predRow[i] ?? 0) - (actualRow[i] ?? 0);
         loss += diff * diff;
@@ -867,9 +867,9 @@ export class PLRNNEngine implements IPLRNNEngine {
     let totalCount = 0;
     for (let i = 0; i < n; i++) {
       const row = W[i];
-      if (!row) continue;
+      if (!row) {continue;}
       for (let j = 0; j < n; j++) {
-        if (Math.abs(row[j] ?? 0) < 0.01) zeroCount++;
+        if (Math.abs(row[j] ?? 0) < 0.01) {zeroCount++;}
         totalCount++;
       }
     }
@@ -996,10 +996,10 @@ export class PLRNNEngine implements IPLRNNEngine {
     for (let i = 0; i < n; i++) {
       const rowI = W[i];
       const rowJ_check = W;
-      if (!rowI) continue;
+      if (!rowI) {continue;}
       for (let j = i + 1; j < n; j++) {
         const rowJ = rowJ_check[j];
-        if (!rowJ) continue;
+        if (!rowJ) {continue;}
         const wij = rowI[j] ?? 0;
         const wji = rowJ[i] ?? 0;
         if (Math.abs(wij) > threshold && Math.abs(wji) > threshold) {
@@ -1014,7 +1014,7 @@ export class PLRNNEngine implements IPLRNNEngine {
   }
 
   private calculateAutocorrelation(series: number[]): number {
-    if (series.length < 3) return 0;
+    if (series.length < 3) {return 0;}
 
     const mean = series.reduce((a, b) => a + b, 0) / series.length;
     let numerator = 0;
@@ -1035,7 +1035,7 @@ export class PLRNNEngine implements IPLRNNEngine {
   }
 
   private calculateVariance(series: number[]): number {
-    if (series.length < 2) return 0;
+    if (series.length < 2) {return 0;}
 
     const mean = series.reduce((a, b) => a + b, 0) / series.length;
     const variance = series.reduce((sum, v) => sum + (v - mean) ** 2, 0) / (series.length - 1);
@@ -1044,7 +1044,7 @@ export class PLRNNEngine implements IPLRNNEngine {
   }
 
   private detectFlickering(series: number[]): number {
-    if (series.length < 5) return 0;
+    if (series.length < 5) {return 0;}
 
     // Count zero-crossings around mean (indicator of bimodality)
     const mean = series.reduce((a, b) => a + b, 0) / series.length;
@@ -1068,7 +1068,7 @@ export class PLRNNEngine implements IPLRNNEngine {
   }
 
   private estimateTransitionTime(autocorrelation: number): number | null {
-    if (autocorrelation < 0.7) return null;
+    if (autocorrelation < 0.7) {return null;}
 
     // Empirical formula based on critical slowing down theory
     // Time to transition ~ 1 / (1 - AC)
@@ -1105,7 +1105,7 @@ export class PLRNNEngine implements IPLRNNEngine {
 
   private calculateCorrelation(x: number[], y: number[]): number {
     const n = x.length;
-    if (n < 3) return 0;
+    if (n < 3) {return 0;}
 
     const meanX = x.reduce((a, b) => a + b, 0) / n;
     const meanY = y.reduce((a, b) => a + b, 0) / n;
@@ -1131,7 +1131,7 @@ export class PLRNNEngine implements IPLRNNEngine {
     predicted: IPLRNNState,
     target: number[]
   ): void {
-    if (!this.weights || !this.adamState) return;
+    if (!this.weights || !this.adamState) {return;}
 
     const { A, W, B, biasLatent, biasObserved } = this.weights;
     const lr = this.config.learningRate;
@@ -1150,7 +1150,7 @@ export class PLRNNEngine implements IPLRNNEngine {
     // Gradient for B
     for (let i = 0; i < B.length; i++) {
       const rowB = B[i];
-      if (!rowB) continue;
+      if (!rowB) {continue;}
       const errI = outputError[i] ?? 0;
       for (let j = 0; j < rowB.length; j++) {
         let grad = -errI * (predicted.latentState[j] ?? 0);
@@ -1180,7 +1180,7 @@ export class PLRNNEngine implements IPLRNNEngine {
     const phiZ = prevState.latentState.map(v => Math.max(0, v));
     for (let i = 0; i < W.length; i++) {
       const rowW = W[i];
-      if (!rowW) continue;
+      if (!rowW) {continue;}
       const latErr = latentError[i] ?? 0;
       for (let j = 0; j < rowW.length; j++) {
         const phi = phiZ[j] ?? 0;
@@ -1206,7 +1206,7 @@ export class PLRNNEngine implements IPLRNNEngine {
     for (let iter = 0; iter < 20; iter++) {
       const Av = this.matVec(W, v);
       const norm = Math.sqrt(Av.reduce((sum, x) => sum + x * x, 0));
-      if (norm < 1e-10) return 0;
+      if (norm < 1e-10) {return 0;}
       v = Av.map(x => x / norm);
     }
 
@@ -1354,9 +1354,9 @@ export class PLRNNEngine implements IPLRNNEngine {
       dBiasObserved: number[];
     },
     learningRate: number,
-    l1Reg: number = 0.01,
-    l2Reg: number = 0.0001,
-    gradClip: number = 1.0
+    l1Reg = 0.01,
+    l2Reg = 0.0001,
+    gradClip = 1.0
   ): void {
     if (!this.weights) {
       throw new Error('PLRNNEngine not initialized');
@@ -1388,17 +1388,17 @@ export class PLRNNEngine implements IPLRNNEngine {
     const clip = (g: number): number => Math.max(-gradClip, Math.min(gradClip, g));
 
     // Update A (diagonal)
-    if (!this.adamState.m['A']) {
-      this.adamState.m['A'] = [Array(n).fill(0)];
-      this.adamState.v['A'] = [Array(n).fill(0)];
+    if (!this.adamState.m.A) {
+      this.adamState.m.A = [Array(n).fill(0)];
+      this.adamState.v.A = [Array(n).fill(0)];
     }
     for (let i = 0; i < n; i++) {
       let grad = gradients.dA[i] ?? 0;
       grad += l2Reg * (A[i] ?? 0); // L2 regularization
       grad = clip(grad);
 
-      const mA = this.adamState.m['A']![0]!;
-      const vA = this.adamState.v['A']![0]!;
+      const mA = this.adamState.m.A[0]!;
+      const vA = this.adamState.v.A![0]!;
 
       mA[i] = beta1 * (mA[i] ?? 0) + (1 - beta1) * grad;
       vA[i] = beta2 * (vA[i] ?? 0) + (1 - beta2) * grad * grad;
@@ -1410,14 +1410,14 @@ export class PLRNNEngine implements IPLRNNEngine {
     }
 
     // Update W
-    if (!this.adamState.m['W']) {
-      this.adamState.m['W'] = Array(n).fill(null).map(() => Array(n).fill(0));
-      this.adamState.v['W'] = Array(n).fill(null).map(() => Array(n).fill(0));
+    if (!this.adamState.m.W) {
+      this.adamState.m.W = Array(n).fill(null).map(() => Array(n).fill(0));
+      this.adamState.v.W = Array(n).fill(null).map(() => Array(n).fill(0));
     }
     for (let i = 0; i < n; i++) {
       const wRow = W[i];
       const dWRow = gradients.dW[i];
-      if (!wRow || !dWRow) continue;
+      if (!wRow || !dWRow) {continue;}
 
       for (let j = 0; j < n; j++) {
         let grad = dWRow[j] ?? 0;
@@ -1426,8 +1426,8 @@ export class PLRNNEngine implements IPLRNNEngine {
         grad += l2Reg * wij; // L2 regularization
         grad = clip(grad);
 
-        const mW = this.adamState.m['W']! as number[][];
-        const vW = this.adamState.v['W']! as number[][];
+        const mW = this.adamState.m.W;
+        const vW = this.adamState.v.W!;
 
         mW[i]![j] = beta1 * (mW[i]![j] ?? 0) + (1 - beta1) * grad;
         vW[i]![j] = beta2 * (vW[i]![j] ?? 0) + (1 - beta2) * grad * grad;
@@ -1440,22 +1440,22 @@ export class PLRNNEngine implements IPLRNNEngine {
     }
 
     // Update B
-    if (!this.adamState.m['B']) {
-      this.adamState.m['B'] = Array(n).fill(null).map(() => Array(n).fill(0));
-      this.adamState.v['B'] = Array(n).fill(null).map(() => Array(n).fill(0));
+    if (!this.adamState.m.B) {
+      this.adamState.m.B = Array(n).fill(null).map(() => Array(n).fill(0));
+      this.adamState.v.B = Array(n).fill(null).map(() => Array(n).fill(0));
     }
     for (let i = 0; i < n; i++) {
       const bRow = B[i];
       const dBRow = gradients.dB[i];
-      if (!bRow || !dBRow) continue;
+      if (!bRow || !dBRow) {continue;}
 
       for (let j = 0; j < n; j++) {
         let grad = dBRow[j] ?? 0;
         grad += l2Reg * (bRow[j] ?? 0);
         grad = clip(grad);
 
-        const mB = this.adamState.m['B']! as number[][];
-        const vB = this.adamState.v['B']! as number[][];
+        const mB = this.adamState.m.B;
+        const vB = this.adamState.v.B!;
 
         mB[i]![j] = beta1 * (mB[i]![j] ?? 0) + (1 - beta1) * grad;
         vB[i]![j] = beta2 * (vB[i]![j] ?? 0) + (1 - beta2) * grad * grad;
@@ -1468,15 +1468,15 @@ export class PLRNNEngine implements IPLRNNEngine {
     }
 
     // Update biases
-    if (!this.adamState.m['biasLatent']) {
-      this.adamState.m['biasLatent'] = [Array(n).fill(0)];
-      this.adamState.v['biasLatent'] = [Array(n).fill(0)];
+    if (!this.adamState.m.biasLatent) {
+      this.adamState.m.biasLatent = [Array(n).fill(0)];
+      this.adamState.v.biasLatent = [Array(n).fill(0)];
     }
     for (let i = 0; i < n; i++) {
-      let grad = clip(gradients.dBiasLatent[i] ?? 0);
+      const grad = clip(gradients.dBiasLatent[i] ?? 0);
 
-      const mBL = this.adamState.m['biasLatent']![0]!;
-      const vBL = this.adamState.v['biasLatent']![0]!;
+      const mBL = this.adamState.m.biasLatent[0]!;
+      const vBL = this.adamState.v.biasLatent![0]!;
 
       mBL[i] = beta1 * (mBL[i] ?? 0) + (1 - beta1) * grad;
       vBL[i] = beta2 * (vBL[i] ?? 0) + (1 - beta2) * grad * grad;
@@ -1487,15 +1487,15 @@ export class PLRNNEngine implements IPLRNNEngine {
       biasLatent[i] = (biasLatent[i] ?? 0) - learningRate * mHat / (Math.sqrt(vHat) + epsilon);
     }
 
-    if (!this.adamState.m['biasObserved']) {
-      this.adamState.m['biasObserved'] = [Array(n).fill(0)];
-      this.adamState.v['biasObserved'] = [Array(n).fill(0)];
+    if (!this.adamState.m.biasObserved) {
+      this.adamState.m.biasObserved = [Array(n).fill(0)];
+      this.adamState.v.biasObserved = [Array(n).fill(0)];
     }
     for (let i = 0; i < n; i++) {
-      let grad = clip(gradients.dBiasObserved[i] ?? 0);
+      const grad = clip(gradients.dBiasObserved[i] ?? 0);
 
-      const mBO = this.adamState.m['biasObserved']![0]!;
-      const vBO = this.adamState.v['biasObserved']![0]!;
+      const mBO = this.adamState.m.biasObserved[0]!;
+      const vBO = this.adamState.v.biasObserved![0]!;
 
       mBO[i] = beta1 * (mBO[i] ?? 0) + (1 - beta1) * grad;
       vBO[i] = beta2 * (vBO[i] ?? 0) + (1 - beta2) * grad * grad;

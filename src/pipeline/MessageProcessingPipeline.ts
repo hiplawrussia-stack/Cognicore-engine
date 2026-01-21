@@ -22,28 +22,28 @@
  */
 
 import {
-  IIncomingMessage,
-  IMessageAnalysis,
-  IUserState,
-  IGeneratedResponse,
-  IPipelineResult,
-  IPipelineConfig,
-  IPipelineStageResult,
-  IPipelineStats,
-  IMessageProcessingPipeline,
-  PipelineEvent,
-  PipelineEventHandler,
+  type IIncomingMessage,
+  type IMessageAnalysis,
+  type IUserState,
+  type IGeneratedResponse,
+  type IPipelineResult,
+  type IPipelineConfig,
+  type IPipelineStageResult,
+  type IPipelineStats,
+  type IMessageProcessingPipeline,
+  type PipelineEvent,
+  type PipelineEventHandler,
   DEFAULT_PIPELINE_CONFIG,
-  MessageIntent,
-  MessageTopic,
-  EmotionType,
-  AgeGroup,
-  RiskLevel,
-  RiskIndicator,
-  ISentimentAnalysis,
-  IDetectedEmotion,
-  IExtractedEntity,
-  ResponseType,
+  type MessageIntent,
+  type MessageTopic,
+  type EmotionType,
+  type AgeGroup,
+  type RiskLevel,
+  type RiskIndicator,
+  type ISentimentAnalysis,
+  type IDetectedEmotion,
+  type IExtractedEntity,
+  type ResponseType,
 } from './IMessagePipeline';
 
 // Phase 1: Voice input integration for multimodal fusion
@@ -71,7 +71,7 @@ function generateId(): string {
  * TODO: Replace with persistent storage in production
  */
 class UserStateStore {
-  private states: Map<string, IUserState> = new Map();
+  private states = new Map<string, IUserState>();
 
   async get(userId: string): Promise<IUserState | null> {
     return this.states.get(userId) || null;
@@ -237,7 +237,7 @@ class NlpAnalyzer {
     for (const [emotion, patterns] of Object.entries(RUSSIAN_PATTERNS.emotions)) {
       for (const pattern of patterns) {
         const match = text.match(pattern);
-        if (match && match.index !== undefined) {
+        if (match?.index !== undefined) {
           entities.push({
             type: 'emotion',
             value: emotion,
@@ -312,8 +312,8 @@ class NlpAnalyzer {
     const positive = ['joy', 'hope', 'gratitude'];
     const negative = ['sadness', 'anger', 'fear', 'anxiety', 'stress', 'loneliness', 'frustration', 'shame', 'guilt'];
 
-    if (positive.includes(emotion)) return 'positive';
-    if (negative.includes(emotion)) return 'negative';
+    if (positive.includes(emotion)) {return 'positive';}
+    if (negative.includes(emotion)) {return 'negative';}
     return 'neutral';
   }
 
@@ -389,11 +389,11 @@ class RiskDetector {
 
     // Determine level
     let level: RiskLevel;
-    if (score >= 0.8) level = 'critical';
-    else if (score >= 0.6) level = 'high';
-    else if (score >= 0.4) level = 'elevated';
-    else if (score >= 0.2) level = 'moderate';
-    else level = 'low';
+    if (score >= 0.8) {level = 'critical';}
+    else if (score >= 0.6) {level = 'high';}
+    else if (score >= 0.4) {level = 'elevated';}
+    else if (score >= 0.2) {level = 'moderate';}
+    else {level = 'low';}
 
     return { level, score, indicators };
   }
@@ -578,14 +578,14 @@ class ResponseGenerator {
       return this.getAcknowledgment(ageGroup);
     }
 
-    const ageTemplates = templates[ageGroup] || templates['adult'];
+    const ageTemplates = templates[ageGroup] || templates.adult;
     const templateIndex = secureRandomInt(0, ageTemplates.length - 1);
     return ageTemplates[templateIndex] ?? '';
   }
 
   private getAcknowledgment(ageGroup: AgeGroup): string {
     const templates = RESPONSE_TEMPLATES.acknowledgment;
-    const ageTemplates = templates[ageGroup] || templates['adult'];
+    const ageTemplates = templates[ageGroup] || templates.adult;
     const templateIndex = secureRandomInt(0, ageTemplates.length - 1);
     return ageTemplates[templateIndex] ?? '';
   }
@@ -709,7 +709,7 @@ export class MessageProcessingPipeline implements IMessageProcessingPipeline {
         throw new Error('NLP analysis failed');
       }
 
-      const analysis = analysisResult.data as IMessageAnalysis;
+      const analysis = analysisResult.data;
       await this.emit('message:analyzed', { analysis });
       eventsEmitted.push('message:analyzed');
 
@@ -724,7 +724,7 @@ export class MessageProcessingPipeline implements IMessageProcessingPipeline {
       });
       stageResults.push(stateResult);
 
-      let userState = stateResult.data as IUserState;
+      let userState = stateResult.data!;
 
       // Stage 3: Risk Detection
       const riskResult = await this.runStage('risk_detection', async () => {
@@ -785,7 +785,7 @@ export class MessageProcessingPipeline implements IMessageProcessingPipeline {
       });
       stageResults.push(responseResult);
 
-      const response = responseResult.data as IGeneratedResponse;
+      const response = responseResult.data!;
 
       await this.emit('response:generated', { response });
       eventsEmitted.push('response:generated');

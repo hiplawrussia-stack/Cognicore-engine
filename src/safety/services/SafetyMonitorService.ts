@@ -19,28 +19,28 @@
  */
 
 import {
-  ISafetyMonitor,
-  ISafetyContext,
-  ISafetyValidationResult,
-  ICrisisDetectionResult,
-  IEscalationDecision,
-  IHumanEscalationRequest,
-  IConstitutionalClassification,
-  IGuardrailCheckResult,
-  IGuardrailConfig,
-  ISafetyEvent,
-  ISafetyReport,
-  IEUAIActCompliance,
-  IModelCard,
-  ISafetyViolation,
-  ISafetyAction,
-  RiskLevel,
+  type ISafetyMonitor,
+  type ISafetyContext,
+  type ISafetyValidationResult,
+  type ICrisisDetectionResult,
+  type IEscalationDecision,
+  type IHumanEscalationRequest,
+  type IConstitutionalClassification,
+  type IGuardrailCheckResult,
+  type IGuardrailConfig,
+  type ISafetyEvent,
+  type ISafetyReport,
+  type IEUAIActCompliance,
+  type IModelCard,
+  type ISafetyViolation,
+  type ISafetyAction,
+  type RiskLevel,
   generateSafetyId,
 } from '../interfaces/ISafetyEnvelope';
-import { SafetyInvariantService, safetyInvariantService } from './SafetyInvariantService';
-import { ConstitutionalClassifierEngine, constitutionalClassifierEngine } from '../engines/ConstitutionalClassifierEngine';
-import { CrisisDetectionEngine, crisisDetectionEngine } from '../engines/CrisisDetectionEngine';
-import { HumanEscalationService, humanEscalationService } from './HumanEscalationService';
+import { type SafetyInvariantService, safetyInvariantService } from './SafetyInvariantService';
+import { type ConstitutionalClassifierEngine, constitutionalClassifierEngine } from '../engines/ConstitutionalClassifierEngine';
+import { type CrisisDetectionEngine, crisisDetectionEngine } from '../engines/CrisisDetectionEngine';
+import { type HumanEscalationService, humanEscalationService } from './HumanEscalationService';
 import { EU_AI_ACT_CLASSIFICATION } from '../utils/SafetyLevels';
 import { COGNICORE_MODEL_CARD } from '../utils/ModelCard';
 
@@ -136,10 +136,10 @@ export class SafetyMonitorService implements ISafetyMonitor {
   private eventLog: ISafetyEvent[] = [];
 
   // User violation history
-  private userViolations: Map<number, ISafetyViolation[]> = new Map();
+  private userViolations = new Map<number, ISafetyViolation[]>();
 
   // Circuit breaker state
-  private circuitBreakerTriggered: boolean = false;
+  private circuitBreakerTriggered = false;
   private circuitBreakerReason?: string;
 
   constructor(
@@ -600,7 +600,7 @@ export class SafetyMonitorService implements ISafetyMonitor {
               confidence: 0.95,
             });
             passed = false;
-            if (config.onDetection === 'block') blocked = true;
+            if (config.onDetection === 'block') {blocked = true;}
           }
         }
       }
@@ -621,7 +621,7 @@ export class SafetyMonitorService implements ISafetyMonitor {
               confidence: 0.90,
             });
             passed = false;
-            if (config.onDetection === 'block') blocked = true;
+            if (config.onDetection === 'block') {blocked = true;}
           }
         }
       }
@@ -641,7 +641,7 @@ export class SafetyMonitorService implements ISafetyMonitor {
               confidence: 0.95,
             });
             passed = false;
-            if (config.onDetection === 'block') blocked = true;
+            if (config.onDetection === 'block') {blocked = true;}
           }
         }
       }
@@ -821,7 +821,7 @@ export class SafetyMonitorService implements ISafetyMonitor {
     violations: ISafetyViolation[],
     _guardrailResults: IGuardrailCheckResult[]
   ): number {
-    if (violations.length === 0) return 0.95;
+    if (violations.length === 0) {return 0.95;}
 
     const avgViolationConfidence = violations.reduce((sum, v) => sum + v.confidence, 0) / violations.length;
     return avgViolationConfidence;
@@ -926,13 +926,13 @@ export class SafetyMonitorService implements ISafetyMonitor {
   }
 
   private identifyImprovementAreas(violations: ISafetyViolation[]): string[] {
-    const areas: Set<string> = new Set();
+    const areas = new Set<string>();
 
     for (const v of violations) {
-      if (v.invariantId.includes('DIAG')) areas.add('Clinical boundaries');
-      if (v.invariantId.includes('CRISIS')) areas.add('Crisis response');
-      if (v.invariantId.includes('MINOR')) areas.add('Minor protection');
-      if (v.invariantId.includes('PRIN')) areas.add('Constitutional compliance');
+      if (v.invariantId.includes('DIAG')) {areas.add('Clinical boundaries');}
+      if (v.invariantId.includes('CRISIS')) {areas.add('Crisis response');}
+      if (v.invariantId.includes('MINOR')) {areas.add('Minor protection');}
+      if (v.invariantId.includes('PRIN')) {areas.add('Constitutional compliance');}
     }
 
     return Array.from(areas);
