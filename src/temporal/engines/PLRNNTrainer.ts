@@ -18,6 +18,7 @@
 
 import { PLRNNEngine } from './PLRNNEngine';
 import type { IPLRNNState } from '../interfaces/IPLRNNEngine';
+import { randomBooleanSecure, secureRandomInt } from '../../utils/SecureRandom';
 import type {
   IPLRNNTrainingConfig,
   IEMATrainingResult,
@@ -436,7 +437,7 @@ export class PLRNNTrainer {
         predictions.push(nextState.observedState);
 
         // Teacher forcing: use actual value instead of prediction
-        if (!isValidation && Math.random() < teacherForcingRatio) {
+        if (!isValidation && randomBooleanSecure(teacherForcingRatio)) {
           state = this.engine.createState(values[t + 1]!, sequence.timestamps[t + 1]);
           state.timestep = nextState.timestep;
         } else {
@@ -967,7 +968,7 @@ export class PLRNNTrainer {
 
   private shuffleArray<T>(array: T[]): void {
     for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = secureRandomInt(0, i);
       [array[i], array[j]] = [array[j]!, array[i]!];
     }
   }

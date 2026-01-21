@@ -68,6 +68,11 @@ import {
 
 import type { ChangeStage } from '../../state/interfaces/INarrativeState';
 
+import {
+  generateShortSecureId,
+  secureRandomInt,
+} from '../../utils/SecureRandom';
+
 // ============================================================
 // MOTIVATIONAL STATE BUILDER IMPLEMENTATION
 // ============================================================
@@ -100,7 +105,7 @@ class MotivationalStateBuilder implements IMotivationalStateBuilder {
   }
 
   private generateId(): string {
-    return `ms_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    return generateShortSecureId('ms');
   }
 
   setUserId(userId: string | number): this {
@@ -758,7 +763,7 @@ export class MotivationalEngine implements IMotivationalInterviewingEngine {
     }
 
     return {
-      id: `utt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: generateShortSecureId('utt'),
       text,
       timestamp: new Date(),
       category,
@@ -852,8 +857,9 @@ export class MotivationalEngine implements IMotivationalInterviewingEngine {
       });
     }
 
-    // Select template based on context
-    const template = templates[Math.floor(Math.random() * templates.length)]!;
+    // Select template based on context (using secure random)
+    const templateIndex = secureRandomInt(0, templates.length - 1);
+    const template = templates[templateIndex]!;
     const text = context.language === 'ru' ? template.templateRu : template.template;
 
     return this.createResponse({
@@ -896,7 +902,8 @@ export class MotivationalEngine implements IMotivationalInterviewingEngine {
       });
     }
 
-    const template = templates[Math.floor(Math.random() * templates.length)]!;
+    const templateIndex = secureRandomInt(0, templates.length - 1);
+    const template = templates[templateIndex]!;
     const text = context.language === 'ru' ? template.templateRu : template.template;
 
     return this.createResponse({
@@ -999,7 +1006,8 @@ export class MotivationalEngine implements IMotivationalInterviewingEngine {
   ): Promise<MIResponse> {
     const strategy = DISCORD_RESPONSE_STRATEGIES[discordType];
     const templates = context.language === 'ru' ? strategy.templatesRu : strategy.templates;
-    const text = templates[Math.floor(Math.random() * templates.length)]!;
+    const textIndex = secureRandomInt(0, templates.length - 1);
+    const text = templates[textIndex]!;
 
     return this.createResponse({
       text,

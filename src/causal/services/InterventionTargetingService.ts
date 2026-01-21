@@ -39,6 +39,8 @@ import {
   CausalInterventionType,
 } from '../interfaces/ICausalGraph';
 
+import { secureRandom } from '../../utils/SecureRandom';
+
 // ============================================================================
 // INTERVENTION MAPPINGS
 // ============================================================================
@@ -817,8 +819,8 @@ export class InterventionTargetingService implements IInterventionTargetingServi
           }
         }
 
-        // Add noise
-        const noise = (Math.random() - 0.5) * node.volatility * 0.1;
+        // Add noise (using cryptographically secure random)
+        const noise = (secureRandom() - 0.5) * node.volatility * 0.1;
         newValue += noise;
 
         // Mean reversion

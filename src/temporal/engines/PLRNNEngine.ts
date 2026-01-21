@@ -39,6 +39,8 @@ import {
   DEFAULT_PLRNN_CONFIG,
 } from '../interfaces/IPLRNNEngine';
 
+import { secureRandom, randomBooleanSecure } from '../../utils/SecureRandom';
+
 import {
   type IKalmanFormerEngine,
   type IKalmanFormerState,
@@ -98,7 +100,7 @@ export class PLRNNEngine implements IPLRNNEngine {
 
     // Diagonal autoregression: values < 1 for stability (eigenvalues < 1)
     // Research shows A should be in range [0.8, 0.95] for stable dynamics
-    const A = Array(n).fill(0).map(() => 0.85 + Math.random() * 0.1);
+    const A = Array(n).fill(0).map(() => 0.85 + secureRandom() * 0.1);
 
     // Off-diagonal connections: smaller scale for stability
     // Initialize with smaller magnitude to prevent gradient explosion
@@ -779,7 +781,7 @@ export class PLRNNEngine implements IPLRNNEngine {
       this.updateWeightsOnline(state, predicted, target);
 
       // Teacher forcing
-      if (Math.random() < this.config.teacherForcingRatio) {
+      if (randomBooleanSecure(this.config.teacherForcingRatio)) {
         state = this.initializeState(target);
         state.timestep = predicted.timestep;
       } else {
@@ -907,18 +909,18 @@ export class PLRNNEngine implements IPLRNNEngine {
         } else if (type === 'near_identity') {
           // Near-identity: identity + small perturbation
           // Better for stable training while allowing learning
-          row[j] = i === j ? 1 + (Math.random() - 0.5) * 0.1 : (Math.random() - 0.5) * 0.02;
+          row[j] = i === j ? 1 + (secureRandom() - 0.5) * 0.1 : (secureRandom() - 0.5) * 0.02;
         } else if (type === 'sparse') {
           // Sparse: 80% zeros
-          row[j] = Math.random() < 0.2 ? (Math.random() - 0.5) * 2 * scale : 0;
+          row[j] = randomBooleanSecure(0.2) ? (secureRandom() - 0.5) * 2 * scale : 0;
         } else if (type === 'sparse_stable') {
           // Sparse with smaller scale for stability
           // 70% zeros, smaller magnitude for non-zero entries
           const smallScale = scale * 0.3; // Reduced scale
-          row[j] = Math.random() < 0.3 ? (Math.random() - 0.5) * 2 * smallScale : 0;
+          row[j] = randomBooleanSecure(0.3) ? (secureRandom() - 0.5) * 2 * smallScale : 0;
         } else {
           // Full or normal
-          row[j] = (Math.random() - 0.5) * 2 * scale;
+          row[j] = (secureRandom() - 0.5) * 2 * scale;
         }
       }
       matrix[i] = row;

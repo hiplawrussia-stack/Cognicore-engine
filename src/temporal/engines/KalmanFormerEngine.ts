@@ -33,6 +33,7 @@ import {
 } from '../interfaces/IKalmanFormer';
 import type { IPLRNNState } from '../interfaces/IPLRNNEngine';
 import type { IKalmanFilterState } from '../../twin/interfaces/IDigitalTwin';
+import { secureRandom } from '../../utils/SecureRandom';
 
 /**
  * State dimension labels
@@ -106,7 +107,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
 
     // Blend ratio predictor
     const blendPredictor = {
-      weights: new Array(embedDim).fill(0).map(() => Math.random() * 0.1),
+      weights: new Array(embedDim).fill(0).map(() => secureRandom() * 0.1),
       bias: 0.5, // Start with equal blend
     };
 
@@ -1016,7 +1017,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
   private initRandomMatrix(rows: number, cols: number): number[][] {
     const scale = Math.sqrt(2.0 / (rows + cols));
     return Array(rows).fill(null).map(() =>
-      Array(cols).fill(0).map(() => (Math.random() - 0.5) * 2 * scale)
+      Array(cols).fill(0).map(() => (secureRandom() - 0.5) * 2 * scale)
     );
   }
 

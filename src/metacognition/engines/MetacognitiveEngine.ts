@@ -71,6 +71,8 @@ import {
   MCT_SOCRATIC_QUESTIONS
 } from '../interfaces/IMetacognitiveTherapy';
 
+import { generateShortSecureId } from '../../utils/SecureRandom';
+
 // ============================================================
 // METACOGNITIVE ENGINE IMPLEMENTATION
 // ============================================================
@@ -247,7 +249,7 @@ export class MetacognitiveEngine implements IMetacognitiveTherapyEngine {
     const totalDuration = instructions.reduce((sum, i) => sum + i.durationSeconds, 0) / 60;
 
     return {
-      id: `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: generateShortSecureId('att'),
       userId,
       type,
       durationMinutes: Math.ceil(totalDuration),
@@ -338,7 +340,7 @@ export class MetacognitiveEngine implements IMetacognitiveTherapyEngine {
     const instructions = this.buildDMInstructions(selectedMetaphor, target, preferences);
 
     return {
-      id: `dm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: generateShortSecureId('dm'),
       type: selectedMetaphor.id as DMExerciseType,
       target,
       instructions,
@@ -426,7 +428,7 @@ export class MetacognitiveEngine implements IMetacognitiveTherapyEngine {
   ): WorryPostponementProtocol {
     const newWorry: PostponedWorry = {
       ...worry,
-      id: `worry_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: generateShortSecureId('worry'),
       capturedAt: new Date(),
       processedDuringWorryTime: false
     };
@@ -832,7 +834,7 @@ export class MetacognitiveStateFactory {
    */
   createInitial(userId: string | number): IMetacognitiveState {
     return {
-      id: `mcs_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: generateShortSecureId('mcs'),
       userId,
       mcq30: this.createDefaultMCQ30(),
       cas: this.createDefaultCAS(),

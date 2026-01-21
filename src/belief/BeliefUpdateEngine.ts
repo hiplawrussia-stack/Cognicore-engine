@@ -37,12 +37,13 @@ import type { IStateVector } from '../state/interfaces/IStateVector';
 import type { EmotionType } from '../state/interfaces/IEmotionalState';
 import type { CognitiveDistortionType } from '../state/interfaces/ICognitiveState';
 import type { RiskLevel } from '../state/interfaces/IRiskState';
+import { generateShortSecureId, secureRandom } from '../utils/SecureRandom';
 
 /**
- * Generate unique ID
+ * Generate unique ID using cryptographically secure random
  */
 function generateId(): string {
-  return `belief_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return generateShortSecureId('belief');
 }
 
 /**
@@ -83,8 +84,8 @@ class DefaultLikelihoodModel implements LikelihoodModel {
 
     likelihood *= typeMultipliers[observation.type] ?? 0.7;
 
-    // Add noise
-    const noise = (Math.random() - 0.5) * this.noiseLevel;
+    // Add noise (using cryptographically secure random)
+    const noise = (secureRandom() - 0.5) * this.noiseLevel;
     likelihood = Math.max(0.01, Math.min(0.99, likelihood + noise));
 
     return likelihood;
@@ -177,13 +178,13 @@ class DefaultTransitionModel implements TransitionModel {
     if (currentState.emotional) {
       const currentVAD = currentState.emotional.vad;
 
-      // Mean reversion to neutral (0, 0, 0.5)
+      // Mean reversion to neutral (0, 0, 0.5) with secure random drift
       const newValence = currentVAD.valence * (1 - reversion) +
-        (Math.random() - 0.5) * drift;
+        (secureRandom() - 0.5) * drift;
       const newArousal = currentVAD.arousal * (1 - reversion) +
-        (Math.random() - 0.5) * drift;
+        (secureRandom() - 0.5) * drift;
       const newDominance = currentVAD.dominance * (1 - reversion) +
-        0.5 * reversion + (Math.random() - 0.5) * drift;
+        0.5 * reversion + (secureRandom() - 0.5) * drift;
 
       return {
         emotional: {

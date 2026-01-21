@@ -26,6 +26,7 @@ import type {
   IAttentionWeights,
 } from '../temporal/interfaces/IKalmanFormer';
 import type { IKalmanFilterState } from '../twin/interfaces/IDigitalTwin';
+import { secureRandom } from '../utils/SecureRandom';
 
 /**
  * Dimension mapping from IFullBeliefState to 5D state vector
@@ -138,7 +139,7 @@ export function beliefStateToPLRNNState(
 
   return {
     latentState: observation, // Use observation as initial latent state
-    hiddenActivations: new Array(hiddenUnits).fill(0).map(() => Math.random() * 0.1),
+    hiddenActivations: new Array(hiddenUnits).fill(0).map(() => secureRandom() * 0.1),
     observedState: observation,
     uncertainty,
     timestamp: belief.timestamp,

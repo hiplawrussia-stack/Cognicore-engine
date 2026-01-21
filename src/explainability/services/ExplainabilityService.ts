@@ -51,6 +51,7 @@ import {
 } from '../engines/FeatureAttributionEngine';
 import { CounterfactualExplainer } from '../engines/CounterfactualExplainer';
 import { NarrativeGenerator } from './NarrativeGenerator';
+import { secureRandom } from '../../utils/SecureRandom';
 
 // ============================================================================
 // EXPLAINABILITY SERVICE
@@ -416,7 +417,7 @@ provide clinical diagnosis or treatment recommendations.
     const edges = nodes.slice(0, -1).map((node, index) => ({
       from: node.variable,
       to: nodes[index + 1]?.variable ?? '',
-      strength: 0.6 + Math.random() * 0.3,
+      strength: 0.6 + secureRandom() * 0.3,
       mechanism: 'Прямое влияние',
       mechanismRu: 'Прямое влияние',
     }));

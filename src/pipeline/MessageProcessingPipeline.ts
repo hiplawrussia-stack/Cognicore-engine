@@ -55,9 +55,11 @@ import type {
   IVoiceInputAdapter,
 } from '../voice/interfaces/IVoiceAdapter';
 
-// Simple ID generator (avoids ESM uuid package issues with Jest)
+import { generateShortSecureId, secureRandomInt } from '../utils/SecureRandom';
+
+// Cryptographically secure ID generator
 function generateId(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 9)}`;
+  return generateShortSecureId();
 }
 
 // ============================================================================
@@ -577,13 +579,15 @@ class ResponseGenerator {
     }
 
     const ageTemplates = templates[ageGroup] || templates['adult'];
-    return ageTemplates[Math.floor(Math.random() * ageTemplates.length)] ?? '';
+    const templateIndex = secureRandomInt(0, ageTemplates.length - 1);
+    return ageTemplates[templateIndex] ?? '';
   }
 
   private getAcknowledgment(ageGroup: AgeGroup): string {
     const templates = RESPONSE_TEMPLATES.acknowledgment;
     const ageTemplates = templates[ageGroup] || templates['adult'];
-    return ageTemplates[Math.floor(Math.random() * ageTemplates.length)] ?? '';
+    const templateIndex = secureRandomInt(0, ageTemplates.length - 1);
+    return ageTemplates[templateIndex] ?? '';
   }
 
   private personalize(

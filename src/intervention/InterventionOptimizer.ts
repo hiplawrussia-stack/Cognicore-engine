@@ -49,71 +49,40 @@ import {
   CreateInterventionOptimizer,
 } from './IInterventionOptimizer';
 
+import {
+  generateShortSecureId,
+  secureRandom,
+  secureRandomInt,
+  betaSampleSecure,
+  gaussianSecure,
+  randomBooleanSecure,
+  weightedRandomIndexSecure,
+} from '../utils/SecureRandom';
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
 /**
- * Generate unique ID
+ * Generate unique ID using cryptographically secure random
  */
 function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  return generateShortSecureId();
 }
 
 /**
- * Sample from Beta distribution using Gamma samples
+ * Sample from Beta distribution using cryptographically secure random
  * Thompson Sampling for binary outcomes
  */
 function sampleBeta(alpha: number, beta: number): number {
-  // Use Gamma distribution relationship: Beta(a,b) = Gamma(a,1) / (Gamma(a,1) + Gamma(b,1))
-  const gammaA = sampleGamma(alpha, 1);
-  const gammaB = sampleGamma(beta, 1);
-  return gammaA / (gammaA + gammaB);
+  return betaSampleSecure(alpha, beta);
 }
 
 /**
- * Sample from Gamma distribution using Marsaglia and Tsang's method
- */
-function sampleGamma(shape: number, scale: number): number {
-  if (shape < 1) {
-    // For shape < 1, use: Gamma(shape) = Gamma(shape+1) * U^(1/shape)
-    const u = Math.random();
-    return sampleGamma(shape + 1, scale) * Math.pow(u, 1 / shape);
-  }
-
-  const d = shape - 1 / 3;
-  const c = 1 / Math.sqrt(9 * d);
-
-  while (true) {
-    let x: number;
-    let v: number;
-
-    do {
-      x = sampleNormal(0, 1);
-      v = 1 + c * x;
-    } while (v <= 0);
-
-    v = v * v * v;
-    const u = Math.random();
-
-    if (u < 1 - 0.0331 * (x * x) * (x * x)) {
-      return d * v * scale;
-    }
-
-    if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) {
-      return d * v * scale;
-    }
-  }
-}
-
-/**
- * Sample from Normal distribution using Box-Muller transform
+ * Sample from Normal distribution using cryptographically secure Box-Muller
  */
 function sampleNormal(mean: number, stddev: number): number {
-  const u1 = Math.random();
-  const u2 = Math.random();
-  const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-  return mean + stddev * z;
+  return gaussianSecure(mean, stddev);
 }
 
 /**
@@ -150,23 +119,14 @@ function softmax(values: number[], temperature: number = 1.0): number[] {
 }
 
 /**
- * Weighted random selection
+ * Weighted random selection using cryptographically secure random
  */
 function weightedRandomSelect<T>(items: T[], weights: number[]): T {
   if (items.length === 0) {
     throw new Error('Cannot select from empty items array');
   }
-  const totalWeight = weights.reduce((a, b) => a + b, 0);
-  let random = Math.random() * totalWeight;
-
-  for (let i = 0; i < items.length; i++) {
-    random -= weights[i] ?? 0;
-    if (random <= 0) {
-      return items[i]!;
-    }
-  }
-
-  return items[items.length - 1]!;
+  const index = weightedRandomIndexSecure(weights);
+  return items[index]!;
 }
 
 // ============================================================================
@@ -279,8 +239,8 @@ export class InterventionOptimizer implements IInterventionOptimizer {
     let alternatives: IAlternativeIntervention[];
 
     if (shouldExplore && this.config.explorationStrategy === 'epsilon_greedy') {
-      // Random exploration
-      const randomIndex = Math.floor(Math.random() * eligibleInterventions.length);
+      // Random exploration using cryptographically secure random
+      const randomIndex = secureRandomInt(0, eligibleInterventions.length - 1);
       selectedIntervention = eligibleInterventions[randomIndex]!;
       expectedReward = this.getArmMeanReward(selectedIntervention.id);
       probability = 1 / eligibleInterventions.length;
@@ -439,26 +399,26 @@ export class InterventionOptimizer implements IInterventionOptimizer {
       }
     }
 
-    // MRT randomization if enabled
+    // MRT randomization if enabled (using cryptographically secure random)
     if (this.config.enableMRTRandomization) {
-      return Math.random() < this.config.mrtRandomizationProbability;
+      return randomBooleanSecure(this.config.mrtRandomizationProbability);
     }
 
     // Check context appropriateness
     if (context.riskLevel > 0.8 && decisionPointType !== 'user_initiated') {
       // High risk - be more cautious about unsolicited interventions
-      return Math.random() < 0.3;
+      return randomBooleanSecure(0.3);
     }
 
     // Check energy level
     if (context.energyLevel < 0.2) {
       // Low energy - less likely to engage
-      return Math.random() < 0.5;
+      return randomBooleanSecure(0.5);
     }
 
     // Default: deliver with probability based on engagement history
     const engagementRate = userProfile.engagementRate || 0.5;
-    return Math.random() < (0.5 + engagementRate * 0.3);
+    return randomBooleanSecure(0.5 + engagementRate * 0.3);
   }
 
   /**
@@ -1395,7 +1355,7 @@ export class InterventionOptimizer implements IInterventionOptimizer {
       return false;
     }
 
-    return Math.random() < this.config.epsilon;
+    return randomBooleanSecure(this.config.epsilon);
   }
 
   /**

@@ -31,6 +31,7 @@ import {
 } from '../interfaces/IDigitalTwin';
 
 import { KalmanFilterEngine } from '../engines/KalmanFilterEngine';
+import { secureRandom } from '../../utils/SecureRandom';
 
 // ============================================================================
 // CONSTANTS
@@ -625,7 +626,7 @@ export class DigitalTwinService implements IDigitalTwinService {
         // Add noise to initial state
         const initState0 = config.initialState[0];
         if (initState0 !== undefined) {
-          config.initialState[0] = initState0 + (Math.random() - 0.5) * 0.1;
+          config.initialState[0] = initState0 + (secureRandom() - 0.5) * 0.1;
         }
 
         const state = this.kalmanEngine.initialize(config);

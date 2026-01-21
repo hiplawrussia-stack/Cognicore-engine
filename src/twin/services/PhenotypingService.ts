@@ -26,6 +26,8 @@ import {
   generateTwinId,
 } from '../interfaces/IDigitalTwin';
 
+import { randomBooleanSecure } from '../../utils/SecureRandom';
+
 // ============================================================================
 // CONSTANTS
 // ============================================================================
@@ -628,7 +630,7 @@ export class PhenotypingService implements IDigitalPhenotypingService {
       case 'message_logs':
         features.set('count', 1);
         // Direction: 0 = outgoing, 1 = incoming
-        features.set('direction', Math.random() > 0.5 ? 1 : 0);
+        features.set('direction', randomBooleanSecure(0.5) ? 1 : 0);
         break;
 
       default:

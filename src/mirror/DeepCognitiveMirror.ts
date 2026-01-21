@@ -53,12 +53,17 @@ import {
 } from './IDeepCognitiveMirror';
 import type { CognitiveDistortionType } from '../state/interfaces/ICognitiveState';
 import type { EmotionType } from '../state/interfaces/IEmotionalState';
+import {
+  generateShortSecureId,
+  secureRandom,
+  secureRandomInt,
+} from '../utils/SecureRandom';
 
 /**
- * Generate unique ID
+ * Generate unique ID using cryptographically secure random
  */
 function generateId(prefix: string = 'dcm'): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return generateShortSecureId(prefix);
 }
 
 /**
@@ -246,7 +251,7 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
           if (!existing) {
             distortions.push({
               type: distortionType as CognitiveDistortionType,
-              confidence: 0.6 + Math.random() * 0.2, // Base confidence + variance
+              confidence: 0.6 + secureRandom() * 0.2, // Base confidence + secure variance
               evidenceSpan: {
                 start: index,
                 end: index + keyword.length,
@@ -267,7 +272,7 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
           if (!existing) {
             distortions.push({
               type: distortionType as CognitiveDistortionType,
-              confidence: 0.7 + Math.random() * 0.2, // Higher confidence for patterns
+              confidence: 0.7 + secureRandom() * 0.2, // Higher confidence for patterns (secure)
               evidenceSpan: {
                 start: match.index,
                 end: match.index + match[0].length,
@@ -608,7 +613,8 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
     ];
 
     while (questions.length < count) {
-      const randomQ = generalQuestions[Math.floor(Math.random() * generalQuestions.length)];
+      const randomIndex = secureRandomInt(0, generalQuestions.length - 1);
+      const randomQ = generalQuestions[randomIndex];
       if (randomQ && !questions.find(q => q.question === randomQ.question)) {
         questions.push(randomQ);
       }
@@ -706,7 +712,7 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
     for (const strategy of strategies.slice(0, count)) {
       alternatives.push({
         content: strategy,
-        believability: 0.5 + Math.random() * 0.3,
+        believability: 0.5 + secureRandom() * 0.3,
         isBalanced: true,
         preservesValidConcerns: true,
       });

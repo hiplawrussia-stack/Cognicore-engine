@@ -100,15 +100,17 @@ import {
   type IHybridPrediction,
 } from '../belief/BeliefStateAdapter';
 
+import { generateShortSecureId } from '../utils/SecureRandom';
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
 /**
- * Generate unique ID
+ * Generate unique ID using cryptographically secure random
  */
 function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  return generateShortSecureId();
 }
 
 /**

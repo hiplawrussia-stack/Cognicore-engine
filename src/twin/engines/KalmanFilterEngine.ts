@@ -26,6 +26,8 @@ import {
   IEnsembleKalmanConfig,
 } from '../interfaces/IDigitalTwin';
 
+import { secureRandom } from '../../utils/SecureRandom';
+
 // ============================================================================
 // MATRIX OPERATIONS (Lightweight implementation)
 // ============================================================================
@@ -715,8 +717,12 @@ export class EnsembleKalmanFilter {
   }
 
   private gaussianRandom(): number {
-    const u1 = Math.random();
-    const u2 = Math.random();
+    // Box-Muller transform with cryptographically secure random
+    let u1: number;
+    do {
+      u1 = secureRandom();
+    } while (u1 === 0); // Avoid log(0)
+    const u2 = secureRandom();
     return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
   }
 }
