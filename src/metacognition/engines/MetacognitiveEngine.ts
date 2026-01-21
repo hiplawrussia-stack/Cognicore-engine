@@ -243,7 +243,7 @@ export class MetacognitiveEngine implements IMetacognitiveTherapyEngine {
   createATTSession(
     userId: string | number,
     type: ATTSessionType,
-    preferences?: ATTPreferences
+    _preferences?: ATTPreferences
   ): ATTSession {
     const instructions = this.getATTInstructions(type);
     const totalDuration = instructions.reduce((sum, i) => sum + i.durationSeconds, 0) / 60;
@@ -484,7 +484,7 @@ export class MetacognitiveEngine implements IMetacognitiveTherapyEngine {
    */
   generateSocraticQuestions(
     belief: SpecificBelief,
-    context: MCTContext
+    _context: MCTContext
   ): SocraticQuestion[] {
     // Determine belief type
     let beliefType: SocraticQuestion['targetBeliefType'] = 'positive_worry';
@@ -545,7 +545,7 @@ export class MetacognitiveEngine implements IMetacognitiveTherapyEngine {
    */
   suggestBehavioralExperiment(
     belief: SpecificBelief,
-    context: MCTContext
+    _context: MCTContext
   ): VerbalReattribution['experiments'] {
     const experiments: VerbalReattribution['experiments'] = [];
 

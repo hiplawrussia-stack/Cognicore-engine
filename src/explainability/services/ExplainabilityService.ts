@@ -285,13 +285,33 @@ export class ExplainabilityService implements IExplainabilityService {
   async generateClinicianExplanation(
     sessionData: Record<string, unknown>
   ): Promise<IClinicianExplanation> {
+    // Extract values with proper type handling
+    const userId = typeof sessionData.userId === 'string' || typeof sessionData.userId === 'number'
+      ? String(sessionData.userId) : 'anonymous';
+    const sessionId = typeof sessionData.sessionId === 'string'
+      ? sessionData.sessionId : randomUUID();
+    const presentingConcern = typeof sessionData.presentingConcern === 'string'
+      ? sessionData.presentingConcern : 'Digital wellness concern';
+    const presentingConcernRu = typeof sessionData.presentingConcernRu === 'string'
+      ? sessionData.presentingConcernRu : 'Проблемы цифрового благополучия';
+    const primaryConcern = typeof sessionData.primaryConcern === 'string'
+      ? sessionData.primaryConcern : 'Digital overuse';
+    const riskLevel = typeof sessionData.riskLevel === 'string'
+      ? sessionData.riskLevel : 'low';
+    const reasoning = typeof sessionData.reasoning === 'string'
+      ? sessionData.reasoning : 'Based on user-reported data and interaction patterns';
+    const reasoningRu = typeof sessionData.reasoningRu === 'string'
+      ? sessionData.reasoningRu : 'На основе данных пользователя и паттернов взаимодействия';
+    const selectedIntervention = typeof sessionData.selectedIntervention === 'string'
+      ? sessionData.selectedIntervention : 'Coping technique';
+
     return {
-      patientId: String(sessionData.userId || 'anonymous'),
-      sessionId: String(sessionData.sessionId || randomUUID()),
+      patientId: userId,
+      sessionId: sessionId,
 
       clinicalContext: {
-        presentingConcern: String(sessionData.presentingConcern || 'Digital wellness concern'),
-        presentingConcernRu: String(sessionData.presentingConcernRu || 'Проблемы цифрового благополучия'),
+        presentingConcern: presentingConcern,
+        presentingConcernRu: presentingConcernRu,
         relevantHistory: sessionData.relevantHistory as string[] || [],
         currentSymptoms: sessionData.currentSymptoms as string[] || [],
         riskFactors: sessionData.riskFactors as string[] || [],
@@ -300,18 +320,18 @@ export class ExplainabilityService implements IExplainabilityService {
       },
 
       aiAssessment: {
-        primaryConcern: String(sessionData.primaryConcern || 'Digital overuse'),
+        primaryConcern: primaryConcern,
         severity: sessionData.severity as 'mild' | 'moderate' | 'severe' || 'mild',
-        riskLevel: String(sessionData.riskLevel || 'low'),
+        riskLevel: riskLevel,
         confidence: Number(sessionData.confidence) || 0.7,
-        reasoning: String(sessionData.reasoning || 'Based on user-reported data and interaction patterns'),
-        reasoningRu: String(sessionData.reasoningRu || 'На основе данных пользователя и паттернов взаимодействия'),
+        reasoning: reasoning,
+        reasoningRu: reasoningRu,
         causalFactors: sessionData.causalFactors as string[],
         mechanismHypothesis: sessionData.mechanismHypothesis as string,
       },
 
       interventionRationale: {
-        selectedIntervention: String(sessionData.selectedIntervention || 'Coping technique'),
+        selectedIntervention: selectedIntervention,
         therapeuticApproach: 'CBT-based digital wellness support',
         evidenceBasis: [
           'Beck Cognitive Therapy framework',
@@ -915,8 +935,11 @@ ${clinician.disclaimer}
   } {
     if (typeof prediction === 'object' && prediction !== null) {
       const pred = prediction as Record<string, unknown>;
+      // Find first string-like outcome value
+      const outcomeCandidate = pred.outcome ?? pred.result ?? pred.intervention ?? 'unknown';
+      const outcomeStr = typeof outcomeCandidate === 'string' ? outcomeCandidate : 'unknown';
       return {
-        outcome: String(pred.outcome || pred.result || pred.intervention || 'unknown'),
+        outcome: outcomeStr,
         value: Number(pred.value || pred.score || 0.5),
         confidence: Number(pred.confidence || 0.7),
       };

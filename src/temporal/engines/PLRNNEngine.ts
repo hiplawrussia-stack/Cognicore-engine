@@ -167,7 +167,7 @@ export class PLRNNEngine implements IPLRNNEngine {
   }
 
   loadWeights(weights: IPLRNNWeights): void {
-    this.weights = JSON.parse(JSON.stringify(weights));
+    this.weights = JSON.parse(JSON.stringify(weights)) as IPLRNNWeights;
     if (weights.meta?.config) {
       this.config = weights.meta.config;
     }
@@ -178,7 +178,7 @@ export class PLRNNEngine implements IPLRNNEngine {
     if (!this.weights) {
       throw new Error('PLRNN not initialized. Call initialize() first.');
     }
-    return JSON.parse(JSON.stringify(this.weights));
+    return JSON.parse(JSON.stringify(this.weights)) as IPLRNNWeights;
   }
 
   // ============================================================================
@@ -212,7 +212,7 @@ export class PLRNNEngine implements IPLRNNEngine {
     const WphiZ = this.matVec(W, phiZ);
 
     // Dendritic basis expansion (if dendPLRNN)
-    let dendriticTerm: number[] = Array(n).fill(0);
+    let dendriticTerm: number[] = Array.from({ length: n }, () => 0);
     if (this.config.connectivity === 'dendritic' && dendriticWeights && C) {
       // Dendritic nonlinearity: sum of ReLU basis functions
       const bases = dendriticWeights.map(row =>
@@ -225,7 +225,7 @@ export class PLRNNEngine implements IPLRNNEngine {
     }
 
     // Input term: C * s_t (if external input provided)
-    let inputTerm: number[] = Array(n).fill(0);
+    let inputTerm: number[] = Array.from({ length: n }, () => 0);
     if (input && C) {
       inputTerm = C.map(row =>
         row.reduce((sum, c, i) => sum + c * (input[i] || 0), 0)
@@ -441,7 +441,7 @@ export class PLRNNEngine implements IPLRNNEngine {
         latentState: [...observation],
         hiddenActivations: observation.map(v => Math.max(0, v)),
         observedState: [...observation],
-        uncertainty: Array(observation.length).fill(0.1),
+        uncertainty: Array.from({ length: observation.length }, () => 0.1),
         timestamp,
         timestep: 0,
       };
@@ -946,7 +946,7 @@ export class PLRNNEngine implements IPLRNNEngine {
       latentState: [...obs],
       hiddenActivations: obs.map(v => Math.max(0, v)),
       observedState: [...obs],
-      uncertainty: Array(n).fill(0.1),
+      uncertainty: Array.from({ length: n }, () => 0.1),
       timestamp: new Date(),
       timestep: 0,
     };
@@ -1389,8 +1389,8 @@ export class PLRNNEngine implements IPLRNNEngine {
 
     // Update A (diagonal)
     if (!this.adamState.m.A) {
-      this.adamState.m.A = [Array(n).fill(0)];
-      this.adamState.v.A = [Array(n).fill(0)];
+      this.adamState.m.A = [Array.from({ length: n }, () => 0)];
+      this.adamState.v.A = [Array.from({ length: n }, () => 0)];
     }
     for (let i = 0; i < n; i++) {
       let grad = gradients.dA[i] ?? 0;
@@ -1411,8 +1411,8 @@ export class PLRNNEngine implements IPLRNNEngine {
 
     // Update W
     if (!this.adamState.m.W) {
-      this.adamState.m.W = Array(n).fill(null).map(() => Array(n).fill(0));
-      this.adamState.v.W = Array(n).fill(null).map(() => Array(n).fill(0));
+      this.adamState.m.W = Array.from({ length: n }, () => Array.from({ length: n }, () => 0));
+      this.adamState.v.W = Array.from({ length: n }, () => Array.from({ length: n }, () => 0));
     }
     for (let i = 0; i < n; i++) {
       const wRow = W[i];
@@ -1441,8 +1441,8 @@ export class PLRNNEngine implements IPLRNNEngine {
 
     // Update B
     if (!this.adamState.m.B) {
-      this.adamState.m.B = Array(n).fill(null).map(() => Array(n).fill(0));
-      this.adamState.v.B = Array(n).fill(null).map(() => Array(n).fill(0));
+      this.adamState.m.B = Array.from({ length: n }, () => Array.from({ length: n }, () => 0));
+      this.adamState.v.B = Array.from({ length: n }, () => Array.from({ length: n }, () => 0));
     }
     for (let i = 0; i < n; i++) {
       const bRow = B[i];
@@ -1469,8 +1469,8 @@ export class PLRNNEngine implements IPLRNNEngine {
 
     // Update biases
     if (!this.adamState.m.biasLatent) {
-      this.adamState.m.biasLatent = [Array(n).fill(0)];
-      this.adamState.v.biasLatent = [Array(n).fill(0)];
+      this.adamState.m.biasLatent = [Array.from({ length: n }, () => 0)];
+      this.adamState.v.biasLatent = [Array.from({ length: n }, () => 0)];
     }
     for (let i = 0; i < n; i++) {
       const grad = clip(gradients.dBiasLatent[i] ?? 0);
@@ -1488,8 +1488,8 @@ export class PLRNNEngine implements IPLRNNEngine {
     }
 
     if (!this.adamState.m.biasObserved) {
-      this.adamState.m.biasObserved = [Array(n).fill(0)];
-      this.adamState.v.biasObserved = [Array(n).fill(0)];
+      this.adamState.m.biasObserved = [Array.from({ length: n }, () => 0)];
+      this.adamState.v.biasObserved = [Array.from({ length: n }, () => 0)];
     }
     for (let i = 0; i < n; i++) {
       const grad = clip(gradients.dBiasObserved[i] ?? 0);

@@ -493,9 +493,6 @@ const RESPONSE_TEMPLATES = {
  * Age-adaptive response generator
  */
 class ResponseGenerator {
-  constructor() {
-    // NlpAnalyzer reserved for future advanced response generation
-  }
 
   /**
    * Generate response based on analysis and user state

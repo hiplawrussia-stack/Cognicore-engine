@@ -1573,7 +1573,7 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
           const definition = DISTORTION_DEFINITIONS[distortion];
           if (definition) {
             return `This type of thinking is called "${definition.name}". ${definition.description}. ` +
-              `It\'s very common, and recognizing it is an important step.`;
+              `It's very common, and recognizing it is an important step.`;
           }
         }
         return 'Our thoughts, feelings, and behaviors are all connected. ' +
@@ -1600,7 +1600,8 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
     const evidence: string[] = [];
 
     if (context.currentChain) {
-      evidence.push(`Based on recent message: "${context.currentChain.beliefs[0]?.content.substring(0, 50)}..."`);
+      const beliefContent = context.currentChain.beliefs[0]?.content.substring(0, 50) ?? '';
+      evidence.push(`Based on recent message: "${beliefContent}..."`);
     }
 
     if (context.currentPattern) {

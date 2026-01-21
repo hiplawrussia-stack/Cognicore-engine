@@ -91,14 +91,14 @@ export function secureRandomInt(min: number, max: number): number {
  * boxMullerSecure(100, 15) // [98.2, 112.3] - IQ-like distribution
  */
 export function boxMullerSecure(mean = 0, stdDev = 1): [number, number] {
-  let u1: number, u2: number;
+  let u1: number;
 
   // Ensure u1 > 0 to avoid log(0)
   do {
     u1 = secureRandom();
   } while (u1 === 0);
 
-  u2 = secureRandom();
+  const u2 = secureRandom();
 
   const mag = stdDev * Math.sqrt(-2.0 * Math.log(u1));
   const z0 = mag * Math.cos(2.0 * Math.PI * u2) + mean;

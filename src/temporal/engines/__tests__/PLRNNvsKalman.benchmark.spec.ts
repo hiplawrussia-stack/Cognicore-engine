@@ -17,8 +17,8 @@
  * © БФ "Другой путь", 2025
  */
 
-import { PLRNNEngine, createPLRNNEngine } from '../PLRNNEngine';
-import { KalmanFormerEngine, createKalmanFormerEngine } from '../KalmanFormerEngine';
+import { createPLRNNEngine } from '../PLRNNEngine';
+import { createKalmanFormerEngine } from '../KalmanFormerEngine';
 import type { IPLRNNState } from '../../interfaces/IPLRNNEngine';
 import type { IKalmanFormerState } from '../../interfaces/IKalmanFormer';
 

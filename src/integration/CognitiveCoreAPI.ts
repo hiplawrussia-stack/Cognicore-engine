@@ -61,14 +61,13 @@ import { createBeliefUpdateEngine } from '../belief/BeliefUpdateEngine';
 import type { Observation, IFullBeliefState, IBeliefUpdateEngine } from '../belief/IBeliefUpdate';
 
 import { createTemporalEchoEngine } from '../temporal/TemporalEchoEngine';
-import type { ITemporalEchoEngine, VulnerabilityWindow, PredictionPoint } from '../temporal/ITemporalPrediction';
+import type { ITemporalEchoEngine } from '../temporal/ITemporalPrediction';
 
 import { createDeepCognitiveMirror } from '../mirror/DeepCognitiveMirror';
 import type {
   TextAnalysisResult,
   SocraticQuestion,
   IDeepCognitiveMirror,
-  TherapeuticInsight,
 } from '../mirror/IDeepCognitiveMirror';
 
 import { createInterventionOptimizer } from '../intervention/InterventionOptimizer';
@@ -78,6 +77,7 @@ import type {
   IInterventionOutcome,
   IContextualFeatures,
   IInterventionOptimizer,
+  InterventionCategory,
 } from '../intervention/IInterventionOptimizer';
 
 import {
@@ -694,7 +694,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
       id,
       name: data.name,
       description: data.description,
-      category: category as any,
+      category: category as InterventionCategory,
       intensity,
       modality: 'text_message',
       estimatedDurationSeconds: intensity === 'micro' ? 30 : intensity === 'brief' ? 180 : 300,

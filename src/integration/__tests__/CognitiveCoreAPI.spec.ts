@@ -21,7 +21,6 @@ import {
   createCognitiveCoreAPI,
 } from '../CognitiveCoreAPI';
 import {
-  DEFAULT_COGNITIVE_CORE_CONFIG,
   type ICognitiveCoreConfig,
   type IProcessMessageCommand,
   type IRecordObservationCommand,

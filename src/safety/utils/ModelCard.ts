@@ -431,7 +431,7 @@ export class ModelCardGenerator {
 
 **Version:** ${this.modelCard.modelVersion}
 **Organization:** ${this.modelCard.organization}
-**Last Updated:** ${this.modelCard.lastUpdated.toISOString().split('T')[0]}
+**Last Updated:** ${this.modelCard.lastUpdated.toISOString().split('T')[0] ?? ''}
 
 ---
 
@@ -490,8 +490,8 @@ ${this.modelCard.ethicalConsiderations.mitigationStrategies.map(m => `- ${m}`).j
 ## Safety
 
 **Safety Level:** ${this.modelCard.safety.safetyLevel}
-**Constitutional Principles:** ${this.modelCard.safety.constitutionalPrinciplesCount}
-**Safety Invariants:** ${this.modelCard.safety.safetyInvariantsCount}
+**Constitutional Principles:** ${this.modelCard.safety.constitutionalPrinciplesCount ?? 0}
+**Safety Invariants:** ${this.modelCard.safety.safetyInvariantsCount ?? 0}
 
 ### Safety Measures
 ${this.modelCard.safety.safetyMeasures.map(s => `- ${s}`).join('\n')}
@@ -638,7 +638,7 @@ ${this.modelCard.regulatory.euAiActClassification}
     return `
 ${this.modelCard.modelName} v${this.modelCard.modelVersion}
 Safety: ${this.modelCard.safety.safetyLevel} | EU AI Act: ${EU_AI_ACT_CLASSIFICATION.currentClassification}
-Invariants: ${this.modelCard.safety.safetyInvariantsCount} | Principles: ${this.modelCard.safety.constitutionalPrinciplesCount}
+Invariants: ${this.modelCard.safety.safetyInvariantsCount ?? 0} | Principles: ${this.modelCard.safety.constitutionalPrinciplesCount ?? 0}
     `.trim();
   }
 
@@ -687,8 +687,8 @@ Invariants: ${this.modelCard.safety.safetyInvariantsCount} | Principles: ${this.
 ${this.modelCard.safety.safetyMeasures.map(s => `- ${s}`).join('\n')}
 
 ## Contact
-- Email: ${this.modelCard.contact.email}
-- Last Updated: ${this.modelCard.lastUpdated.toISOString().split('T')[0]}
+- Email: ${this.modelCard.contact.email ?? ''}
+- Last Updated: ${this.modelCard.lastUpdated.toISOString().split('T')[0] ?? ''}
     `.trim();
   }
 
@@ -700,12 +700,12 @@ ${this.modelCard.safety.safetyMeasures.map(s => `- ${s}`).join('\n')}
 # Safety Audit Report
 
 ## System: ${this.modelCard.modelName}
-## Date: ${new Date().toISOString().split('T')[0]}
+## Date: ${new Date().toISOString().split('T')[0] ?? ''}
 
 ## Safety Level
 - **Current Level:** ${this.modelCard.safety.safetyLevel}
-- **Constitutional Principles:** ${this.modelCard.safety.constitutionalPrinciplesCount}
-- **Safety Invariants:** ${this.modelCard.safety.safetyInvariantsCount}
+- **Constitutional Principles:** ${this.modelCard.safety.constitutionalPrinciplesCount ?? 0}
+- **Safety Invariants:** ${this.modelCard.safety.safetyInvariantsCount ?? 0}
 
 ## Tested Scenarios
 ${this.modelCard.safety.testedScenarios.map(s => `- [x] ${s}`).join('\n')}

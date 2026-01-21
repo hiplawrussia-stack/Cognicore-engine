@@ -78,15 +78,15 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
       keyWeights: this.initTransformerWeights(numLayers, numHeads, embedDim, headDim),
       valueWeights: this.initTransformerWeights(numLayers, numHeads, embedDim, headDim),
       outputProjection: this.initRandomMatrix(embedDim, embedDim),
-      feedforward: Array(numLayers).fill(null).map(() => ({
+      feedforward: Array.from({ length: numLayers }, () => ({
         linear1: this.initRandomMatrix(embedDim, embedDim * 4),
         linear2: this.initRandomMatrix(embedDim * 4, embedDim),
-        bias1: new Array(embedDim * 4).fill(0),
-        bias2: new Array(embedDim).fill(0),
+        bias1: Array.from({ length: embedDim * 4 }, () => 0),
+        bias2: Array.from({ length: embedDim }, () => 0),
       })),
-      layerNorm: Array(numLayers * 2).fill(null).map(() => ({
-        gamma: new Array(embedDim).fill(1),
-        beta: new Array(embedDim).fill(0),
+      layerNorm: Array.from({ length: numLayers * 2 }, () => ({
+        gamma: Array.from({ length: embedDim }, () => 1),
+        beta: Array.from({ length: embedDim }, () => 0),
       })),
     };
 
@@ -102,12 +102,12 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
     // Gain predictor (learned Kalman Gain)
     const gainPredictor = this.config.learnedGain ? {
       weights: this.initRandomMatrix(embedDim, stateDim * obsDim),
-      bias: new Array(stateDim * obsDim).fill(0),
+      bias: Array.from({ length: stateDim * obsDim }, () => 0),
     } : undefined;
 
     // Blend ratio predictor
     const blendPredictor = {
-      weights: new Array(embedDim).fill(0).map(() => secureRandom() * 0.1),
+      weights: Array.from({ length: embedDim }, () => secureRandom() * 0.1),
       bias: 0.5, // Start with equal blend
     };
 
@@ -513,7 +513,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
         errorCovariance: this.initDiagonalMatrix(n, 0.1),
         predictedState: [...plrnnState.latentState],
         predictedCovariance: this.initDiagonalMatrix(n, 0.1),
-        innovation: new Array(n).fill(0),
+        innovation: Array.from({ length: n }, () => 0),
         innovationCovariance: this.initDiagonalMatrix(n, 0.1),
         kalmanGain: this.initIdentityMatrix(n),
         normalized_innovation_squared: 0,
@@ -579,7 +579,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
         errorCovariance: this.initDiagonalMatrix(n, 0.1),
         predictedState: [...observation],
         predictedCovariance: this.initDiagonalMatrix(n, 0.1),
-        innovation: new Array(n).fill(0),
+        innovation: Array.from({ length: n }, () => 0),
         innovationCovariance: this.initDiagonalMatrix(n, 0.1),
         kalmanGain: this.initIdentityMatrix(n),
         normalized_innovation_squared: 0,
@@ -675,7 +675,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
 
     // Use last context embedding to predict gain
     const lastContext = contextEncoding[contextEncoding.length - 1] ||
-      new Array(this.config.embedDim).fill(0);
+      Array.from({ length: this.config.embedDim }, () => 0);
 
     // Linear transformation
     const gainVector = this.matVec(
@@ -743,7 +743,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
     history: { observation: number[]; timestamp: Date; embedding?: number[] }[]
   ): number[][] {
     if (history.length === 0) {
-      return [new Array(this.config.embedDim).fill(0)];
+      return [Array.from({ length: this.config.embedDim }, () => 0)];
     }
 
     // Get embeddings
@@ -810,7 +810,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
 
       // Attended values
       for (let i = 0; i < seqLen; i++) {
-        const attended = new Array(headDim).fill(0);
+        const attended: number[] = Array.from({ length: headDim }, () => 0);
         const scoresI = scores[i];
         if (!scoresI) {continue;}
         for (let j = 0; j < seqLen; j++) {
@@ -877,13 +877,13 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
     contextEncoding: number[][]
   ): number[] {
     if (contextEncoding.length === 0) {
-      return new Array(this.config.stateDim).fill(0);
+      return Array.from({ length: this.config.stateDim }, () => 0);
     }
 
     // Use last encoding for prediction
     const lastEncoding = contextEncoding[contextEncoding.length - 1];
     if (!lastEncoding) {
-      return new Array(this.config.stateDim).fill(0);
+      return Array.from({ length: this.config.stateDim }, () => 0);
     }
 
     // Project to state space
@@ -901,7 +901,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
 
     // Use context to predict optimal blend
     const lastContext = contextEncoding[contextEncoding.length - 1] ??
-      new Array(this.config.embedDim).fill(0);
+      Array.from({ length: this.config.embedDim }, () => 0);
 
     const logit = lastContext.reduce((sum, v, i) =>
       sum + v * (this.weights!.blendPredictor!.weights[i] ?? 0), 0
@@ -1042,10 +1042,10 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
     embedDim: number,
     headDim: number
   ): number[][][] {
-    return Array(numLayers).fill(null).map(() =>
-      Array(numHeads).fill(null).map(() => {
+    return Array.from({ length: numLayers }, () =>
+      Array.from({ length: numHeads }, () => {
         const matrix = this.initRandomMatrix(embedDim, headDim);
-        return matrix[0] ?? new Array(headDim).fill(0);
+        return matrix[0] ?? Array.from({ length: headDim }, () => 0);
       })
     );
   }

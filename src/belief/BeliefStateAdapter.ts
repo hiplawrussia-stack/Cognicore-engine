@@ -193,7 +193,7 @@ export function beliefStateToKalmanFormerState(
     predictedCovariance: covariance,
 
     // Innovation (zero for initial state)
-    innovation: new Array(dim).fill(0),
+    innovation: Array.from({ length: dim }, () => 0),
     innovationCovariance: covariance,
 
     // Kalman gain (identity-like for initial)
@@ -214,7 +214,7 @@ export function beliefStateToKalmanFormerState(
 
   return {
     kalmanState,
-    transformerHidden: [new Array(64).fill(0)], // Placeholder for transformer hidden
+    transformerHidden: [Array.from({ length: 64 }, () => 0)], // Placeholder for transformer hidden
     observationHistory: [{
       observation,
       timestamp: belief.timestamp,

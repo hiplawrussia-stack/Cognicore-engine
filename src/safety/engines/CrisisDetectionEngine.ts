@@ -263,7 +263,6 @@ export class CrisisDetectionEngine implements ICrisisDetectionService {
     const input = context.inputText.toLowerCase();
     const indicators: string[] = [];
     let maxRiskLevel: RiskLevel = 'none';
-    let crisisType: ICrisisDetectionResult['crisisType'];
     const assessmentMethods = new Set<string>(['keyword']);
 
     // 1. Keyword-based detection (primary)
@@ -274,7 +273,7 @@ export class CrisisDetectionEngine implements ICrisisDetectionService {
     }
 
     // 2. Determine crisis type
-    crisisType = this.determineCrisisType(input);
+    const crisisType = this.determineCrisisType(input);
 
     // 3. Behavioral analysis (if history available)
     if (context.recentInteractions && context.recentInteractions.length > 0) {

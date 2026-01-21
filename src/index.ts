@@ -460,3 +460,81 @@ export type {
   CrisisDetectorConfig,
   StateRiskData,
 } from './crisis';
+
+// =============================================================================
+// CENTRALIZED ERROR HANDLING (2026)
+// =============================================================================
+
+// Error classes, codes, and handler
+export {
+  // Base error
+  CogniCoreError,
+  // Error codes and enums
+  ErrorCode,
+  ErrorSeverity,
+  ErrorCategory,
+  getErrorCategory,
+  getDefaultSeverity,
+  // Domain errors
+  BeliefUpdateError,
+  InvalidObservationError,
+  DimensionNotFoundError,
+  TemporalNotInitializedError,
+  PredictionError,
+  InvalidTrajectoryError,
+  CrisisDetectionError,
+  InvalidCrisisStateError,
+  InterventionNotFoundError,
+  InterventionSelectionError,
+  NoEligibleInterventionsError,
+  InvalidMetacognitionItemError,
+  MetacognitionAnalysisError,
+  CausalNodeNotFoundError,
+  InvalidCausalGraphError,
+  // Application errors
+  SessionNotFoundError,
+  SessionExpiredError,
+  SessionStartError,
+  SessionEndError,
+  MessageProcessingError,
+  InvalidMessageFormatError,
+  PipelineStageError,
+  PipelineTimeoutError,
+  VoiceProcessingError,
+  TranscriptionError,
+  DataExportError,
+  DataImportError,
+  DataDeleteError,
+  // Infrastructure errors
+  StorageReadError,
+  StorageWriteError,
+  StorageConnectionError,
+  ExternalServiceUnavailableError,
+  ExternalServiceTimeoutError,
+  ExternalServiceError,
+  NLPServiceError,
+  AIModelNotLoadedError,
+  // Validation errors
+  RequiredFieldError,
+  InvalidFormatError,
+  OutOfRangeError,
+  InvalidTypeError,
+  EmptyArrayError,
+  InvalidIdError,
+  // Error handler
+  ErrorHandler,
+  errorHandler,
+  // Global handlers
+  initializeGlobalErrorHandlers,
+  isGlobalErrorHandlersInitialized,
+  resetGlobalErrorHandlers,
+} from './errors';
+
+export type {
+  ErrorContext,
+  SerializedError,
+  ErrorCallback,
+  ErrorLogger,
+  ErrorHandlerConfig,
+  GlobalErrorHandlerOptions,
+} from './errors';

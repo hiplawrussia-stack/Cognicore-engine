@@ -701,14 +701,14 @@ export class FeatureAttributionEngine implements IFeatureAttributionEngine {
     if (explanation.topPositiveFeatures.length > 0) {
       lines.push('\n✅ Положительные факторы:');
       for (const attr of explanation.topPositiveFeatures) {
-        lines.push(`  ${attr.emoji} ${attr.featureNameRu}: ${attr.featureValue}`);
+        lines.push(`  ${attr.emoji ?? '📌'} ${attr.featureNameRu ?? attr.featureName}: ${attr.featureValue}`);
       }
     }
 
     if (explanation.topNegativeFeatures.length > 0) {
       lines.push('\n⚠️ Учтённые сложности:');
       for (const attr of explanation.topNegativeFeatures) {
-        lines.push(`  ${attr.emoji} ${attr.featureNameRu}: ${attr.featureValue}`);
+        lines.push(`  ${attr.emoji ?? '📌'} ${attr.featureNameRu ?? attr.featureName}: ${attr.featureValue}`);
       }
     }
 

@@ -84,7 +84,7 @@ function residualize(y: number[], X: number[][]): number[] {
   if (X.length === 0) {return y;}
 
   const n = y.length;
-  const predicted = new Array(n).fill(0);
+  const predicted: number[] = Array.from({ length: n }, () => 0);
 
   for (const x of X) {
     const r = pearsonCorrelation(y, x);

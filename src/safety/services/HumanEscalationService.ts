@@ -127,9 +127,24 @@ export const ESCALATION_KEYWORDS = {
 // ============================================================================
 
 /**
+ * Template structure for escalation responses
+ */
+interface EscalationTemplate {
+  emergency: string;
+  crisis: string;
+  minorProtection: string;
+  humanRequest: string;
+  safetyConcern: string;
+  repeatedDistress: string;
+  aiUncertainty: string;
+  clinicalComplexity: string;
+  general: string;
+}
+
+/**
  * Age-adaptive escalation response templates
  */
-const ESCALATION_RESPONSE_TEMPLATES = {
+const ESCALATION_RESPONSE_TEMPLATES: Record<'child' | 'teen' | 'adult', EscalationTemplate> = {
   child: {
     emergency: `
 🆘 Мне очень важна твоя безопасность!
@@ -164,6 +179,41 @@ const ESCALATION_RESPONSE_TEMPLATES = {
 Расскажи маме, папе или другому взрослому, которому доверяешь.
 
 📞 8-800-2000-122 — там есть добрые люди!
+    `.trim(),
+    safetyConcern: `
+💙 Я заметил кое-что важное.
+
+Расскажи взрослому — маме, папе или учителю.
+
+📞 8-800-2000-122 — там помогут!
+    `.trim(),
+    repeatedDistress: `
+💙 Я заметил, что тебе было непросто.
+
+Поговори с кем-то, кому доверяешь — мамой, папой, учителем.
+
+📞 8-800-2000-122 — там добрые люди!
+    `.trim(),
+    aiUncertainty: `
+Мне нужна помощь, чтобы лучше тебе помочь.
+
+Расскажи взрослому — маме, папе или учителю.
+
+📞 8-800-2000-122 — там помогут!
+    `.trim(),
+    clinicalComplexity: `
+💙 Это важный вопрос!
+
+Поговори с мамой, папой или другим взрослым.
+
+📞 8-800-2000-122 — там есть специалисты!
+    `.trim(),
+    general: `
+💙 Я хочу, чтобы тебе помогли лучше.
+
+Расскажи взрослому — маме, папе или учителю.
+
+📞 8-800-2000-122 — там добрые люди!
     `.trim(),
   },
 
@@ -222,6 +272,25 @@ const ESCALATION_RESPONSE_TEMPLATES = {
 📞 8-800-2000-122 — Психологическая помощь
 
 Забота о себе — это важно.
+    `.trim(),
+    aiUncertainty: `
+Честно, я не уверен, как лучше помочь.
+
+Поговори с кем-то, кто разбирается лучше меня:
+📞 8-800-2000-122 — Психологическая помощь (бесплатно)
+    `.trim(),
+    clinicalComplexity: `
+То, что ты описываешь, требует профессионального взгляда.
+
+Я AI и не могу заменить психолога.
+📞 8-800-2000-122 — Там реально помогут
+    `.trim(),
+    general: `
+Мне кажется, тебе может быть полезно поговорить с живым человеком.
+
+📞 8-800-2000-122 — Телефон доверия (бесплатно, 24/7)
+
+Я здесь, если нужна поддержка.
     `.trim(),
   },
 
@@ -569,27 +638,27 @@ export class HumanEscalationService implements IHumanEscalationService {
       case 'crisis_detected':
         return templates.crisis;
       case 'safety_concern':
-        return (templates as any).safetyConcern || templates.crisis;
+        return templates.safetyConcern;
       case 'user_request':
         return templates.humanRequest;
       case 'minor_protection':
         return templates.minorProtection;
       case 'repeated_distress':
-        return (templates as any).repeatedDistress || templates.crisis;
+        return templates.repeatedDistress;
       case 'ai_uncertainty':
-        return (templates as any).aiUncertainty || (templates as any).general || templates.crisis;
+        return templates.aiUncertainty;
       case 'clinical_complexity':
-        return (templates as any).clinicalComplexity || (templates as any).general || templates.crisis;
+        return templates.clinicalComplexity;
       case 'ethical_circuit_breaker':
-        return (templates as any).general || templates.crisis;
+        return templates.general;
       case 'confidence_below_threshold':
-        return (templates as any).aiUncertainty || (templates as any).general || templates.crisis;
+        return templates.aiUncertainty;
       case 'regulatory_requirement':
-        return (templates as any).general || templates.crisis;
+        return templates.general;
       case 'vulnerability_detected':
         return templates.crisis;
       default:
-        return (templates as any).general || templates.crisis;
+        return templates.general;
     }
   }
 

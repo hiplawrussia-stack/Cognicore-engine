@@ -383,10 +383,11 @@ export class MIResponseGenerator implements IMIResponseGenerator {
     }
 
     if (template.includeSections.includes('values')) {
+      const firstValue = context.userValues?.[0] ?? '';
       sections.values_connection = context.userValues?.length
         ? (lang === 'ru'
-          ? `Это связано с тем, что для вас важно: ${context.userValues[0]}.`
-          : `This connects to what matters to you: ${context.userValues[0]}.`)
+          ? `Это связано с тем, что для вас важно: ${firstValue}.`
+          : `This connects to what matters to you: ${firstValue}.`)
         : '';
     }
 
@@ -397,7 +398,7 @@ export class MIResponseGenerator implements IMIResponseGenerator {
 
     // Add transition phrase if present
     if (template.transitionPhrase) {
-      const transition = lang === 'ru' ? template.transitionPhraseRu : template.transitionPhrase;
+      const transition = (lang === 'ru' ? template.transitionPhraseRu : template.transitionPhrase) ?? '';
       text = `${text} ${transition}`;
     }
 

@@ -459,7 +459,10 @@ export class InterventionTargetingService implements IInterventionTargetingServi
       let pathEffect = 1;
 
       for (let i = 0; i < path.length - 1; i++) {
-        const edge = graph.edges.get(`${path[i]}->${path[i + 1]}`);
+        const fromNode = path[i];
+        const toNode = path[i + 1];
+        if (fromNode === undefined || toNode === undefined) { continue; }
+        const edge = graph.edges.get(`${fromNode}->${toNode}`);
         pathEffect *= edge?.strength ?? 0;
       }
 
@@ -616,7 +619,10 @@ export class InterventionTargetingService implements IInterventionTargetingServi
     let effect = 1;
 
     for (let i = 0; i < path.length - 1; i++) {
-      const edge = graph.edges.get(`${path[i]}->${path[i + 1]}`);
+      const fromNode = path[i];
+      const toNode = path[i + 1];
+      if (fromNode === undefined || toNode === undefined) { continue; }
+      const edge = graph.edges.get(`${fromNode}->${toNode}`);
       effect *= edge?.strength ?? 0;
     }
 
@@ -642,7 +648,10 @@ export class InterventionTargetingService implements IInterventionTargetingServi
         let pathEffect = 1;
 
         for (let i = 0; i < path.length - 1; i++) {
-          const edge = graph.edges.get(`${path[i]}->${path[i + 1]}`);
+          const fromNode = path[i];
+          const toNode = path[i + 1];
+          if (fromNode === undefined || toNode === undefined) { continue; }
+          const edge = graph.edges.get(`${fromNode}->${toNode}`);
           pathEffect *= edge?.strength ?? 0;
         }
 
@@ -654,7 +663,10 @@ export class InterventionTargetingService implements IInterventionTargetingServi
       const shortestPath = paths.reduce((a, b) => a.length < b.length ? a : b);
 
       for (let i = 0; i < shortestPath.length - 1; i++) {
-        const edge = graph.edges.get(`${shortestPath[i]}->${shortestPath[i + 1]}`);
+        const fromNode = shortestPath[i];
+        const toNode = shortestPath[i + 1];
+        if (fromNode === undefined || toNode === undefined) { continue; }
+        const edge = graph.edges.get(`${fromNode}->${toNode}`);
         timeToEffect += edge?.peakLagHours ?? 6;
       }
 
@@ -704,7 +716,10 @@ export class InterventionTargetingService implements IInterventionTargetingServi
     const pathSigns = paths.map(path => {
       let sign = 1;
       for (let i = 0; i < path.length - 1; i++) {
-        const edge = graph.edges.get(`${path[i]}->${path[i + 1]}`);
+        const fromNode = path[i];
+        const toNode = path[i + 1];
+        if (fromNode === undefined || toNode === undefined) { continue; }
+        const edge = graph.edges.get(`${fromNode}->${toNode}`);
         if (edge && edge.strength < 0) {sign *= -1;}
       }
       return sign;

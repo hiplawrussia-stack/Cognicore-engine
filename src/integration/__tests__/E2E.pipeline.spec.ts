@@ -27,19 +27,17 @@ import {
 import type { IVoiceAnalysisResult, IMultimodalResult } from '../../voice/interfaces/IVoiceAdapter';
 
 import { type CognitiveCoreAPI, createCognitiveCoreAPI } from '../CognitiveCoreAPI';
-import type { IMessageProcessingResult } from '../ICognitiveCoreAPI';
 
 import {
   type TemporalEchoEngine,
   createTemporalEchoEngine,
 } from '../../temporal/TemporalEchoEngine';
-import type { StateTrajectory, PredictionPoint } from '../../temporal/ITemporalPrediction';
 
 import {
   type BeliefUpdateEngine,
   createBeliefUpdateEngine,
 } from '../../belief/BeliefUpdateEngine';
-import type { BeliefState, Observation } from '../../belief/IBeliefUpdate';
+import type { Observation } from '../../belief/IBeliefUpdate';
 
 import { StateVector } from '../../state/StateVector';
 import type { IStateVector } from '../../state/interfaces/IStateVector';
@@ -187,7 +185,7 @@ function generateStateHistory(
 /**
  * Metrics calculation utilities
  */
-function calculateMAE(values1: number[], values2: number[]): number {
+function _calculateMAE(values1: number[], values2: number[]): number {
   if (values1.length !== values2.length || values1.length === 0) {return NaN;}
   return values1.reduce((sum, v, i) => sum + Math.abs(v - values2[i]), 0) / values1.length;
 }
