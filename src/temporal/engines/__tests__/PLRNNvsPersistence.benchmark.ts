@@ -217,5 +217,8 @@ if (require.main === module) {
     verbose: true,
   }).then(result => {
     process.exit(result.beatsPersistence ? 0 : 1);
+  }).catch((err: unknown) => {
+    console.error('Benchmark failed:', err);
+    process.exit(1);
   });
 }

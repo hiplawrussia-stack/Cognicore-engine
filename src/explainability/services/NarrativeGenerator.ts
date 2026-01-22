@@ -31,6 +31,68 @@ import {
 } from '../interfaces/IExplainability';
 
 // ============================================================================
+// EMOJI HELPERS (ReDoS-safe alternatives to large Unicode ranges)
+// ============================================================================
+
+/**
+ * Common emoji code points for detection (subset of Miscellaneous Symbols and Pictographs).
+ * Using a Set for O(1) lookup instead of regex with large Unicode ranges.
+ */
+const COMMON_EMOJI_CODEPOINTS = new Set([
+  // Common narrative emojis used in templates
+  0x1F31F, // 🌟
+  0x1F680, // 🚀
+  0x1F4A1, // 💡
+  0x2728,  // ✨
+  0x1F3AF, // 🎯
+  0x1F4D6, // 📖
+  0x1F914, // 🤔
+  0x1F4DD, // 📝
+  0x2705,  // ✅
+  0x1F44D, // 👍
+  0x1F64C, // 🙌
+  0x1F31E, // 🌞
+  0x1F308, // 🌈
+  0x1F4AA, // 💪
+  0x2764,  // ❤
+  0x1F642, // 🙂
+]);
+
+/**
+ * Checks if a string contains any emoji characters.
+ * Uses codepoint checking instead of regex for ReDoS safety.
+ */
+function containsEmoji(str: string): boolean {
+  for (const char of str) {
+    const codePoint = char.codePointAt(0);
+    if (codePoint !== undefined && (
+      COMMON_EMOJI_CODEPOINTS.has(codePoint) ||
+      (codePoint >= 0x1F300 && codePoint <= 0x1F9FF) // Extended range check
+    )) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Removes emoji characters from a string.
+ * Uses codepoint filtering instead of regex for ReDoS safety.
+ */
+function removeEmojis(str: string): string {
+  let result = '';
+  for (const char of str) {
+    const codePoint = char.codePointAt(0);
+    if (codePoint === undefined ||
+        (codePoint < 0x1F300 || codePoint > 0x1F9FF) &&
+        !COMMON_EMOJI_CODEPOINTS.has(codePoint)) {
+      result += char;
+    }
+  }
+  return result;
+}
+
+// ============================================================================
 // NARRATIVE TEMPLATES
 // ============================================================================
 
@@ -600,7 +662,7 @@ export class NarrativeGenerator implements INarrativeGenerator {
     // From causal explanation
     if (explanation.causalExplanation) {
       const primaryChain = explanation.causalExplanation.primaryChain;
-      if (primaryChain && primaryChain.nodes && primaryChain.nodes.length >= 2) {
+      if (primaryChain?.nodes && primaryChain.nodes.length >= 2) {
         const firstNode = primaryChain.nodes[0];
         const lastNode = primaryChain.nodes[primaryChain.nodes.length - 1];
         if (firstNode) {
@@ -675,7 +737,7 @@ export class NarrativeGenerator implements INarrativeGenerator {
           break;
         case 'visual':
           // Prefer templates with emojis
-          templateIndex = templates.findIndex(t => /[\u{1F300}-\u{1F9FF}]/u.test(t));
+          templateIndex = templates.findIndex(t => containsEmoji(t));
           if (templateIndex === -1) {templateIndex = 0;}
           break;
       }
@@ -791,7 +853,7 @@ export class NarrativeGenerator implements INarrativeGenerator {
     };
 
     // Remove emojis for lookup
-    const cleanTitle = title.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+    const cleanTitle = removeEmojis(title).trim();
 
     return translations[cleanTitle] || title;
   }

@@ -487,7 +487,26 @@ class StateVectorBuilder implements IStateVectorBuilder {
       observationCount: 1,
     };
 
-    return new (StateVector as any)({
+    return new (StateVector as unknown as new (params: {
+      id: string;
+      userId: string | number;
+      timestamp: Date;
+      emotional: IEmotionalState;
+      cognitive: ICognitiveState;
+      narrative: INarrativeState;
+      risk: IRiskState;
+      resources: IResourceState;
+      belief: BeliefState;
+      quality: StateQuality;
+      recentTransitions: StateTransition[];
+      predictions: TemporalPrediction[];
+      summary: StateSummary;
+      recommendations: StateBasedRecommendation[];
+      wellbeingIndex: number;
+      stabilityIndex: number;
+      resilienceIndex: number;
+      interventionUrgency: number;
+    }) => StateVector)({
       id: uuidv4(),
       userId: this.userId,
       timestamp,

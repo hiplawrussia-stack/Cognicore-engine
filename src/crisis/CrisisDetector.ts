@@ -239,8 +239,18 @@ const PROTECTIVE_FACTORS = [
 
   // English - more specific patterns
   // CRITICAL: Use negative lookbehind to avoid "don't want to live" as protective
-  /but\s+(?:i\s+)?(?:want to|will|trying|there's hope)/i,
-  /(?:i\s+)?don'?t\s+(?:want to die|going to|actually)/i,
+  // Fixed: Avoid nested optional groups with quantifiers (ReDoS prevention)
+  /but i want to/i,
+  /but want to/i,
+  /but i will/i,
+  /but will/i,
+  /but i'?m trying/i,
+  /but trying/i,
+  /but there'?s hope/i,
+  /i don'?t want to die/i,
+  /don'?t want to die/i,
+  /i'?m not going to/i,
+  /not actually/i,
   /help me/i,
   /need help/i,
   /(?<!don'?t\s)want to\s+(?:live|change|get help)/i,

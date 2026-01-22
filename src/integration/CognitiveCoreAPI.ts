@@ -68,6 +68,7 @@ import type {
   TextAnalysisResult,
   SocraticQuestion,
   IDeepCognitiveMirror,
+  TherapeuticInsight,
 } from '../mirror/IDeepCognitiveMirror';
 
 import { createInterventionOptimizer } from '../intervention/InterventionOptimizer';
@@ -204,11 +205,11 @@ class InMemoryEventBus implements IEventBus {
   private subscriptions = new Map<string, Map<string, EventHandler>>();
   private subscriptionCounter = 0;
 
-  async publish<T extends IDomainEvent>(event: T): Promise<void> {
+  async publish(event: IDomainEvent): Promise<void> {
     const handlers = this.subscriptions.get(event.eventType);
     if (handlers) {
       const promises = Array.from(handlers.values()).map(handler =>
-        handler(event).catch(err => {
+        handler(event).catch((err: unknown) => {
           console.error(`Error in event handler for ${event.eventType}:`, err);
         })
       );
@@ -219,7 +220,7 @@ class InMemoryEventBus implements IEventBus {
     const wildcardHandlers = this.subscriptions.get('*');
     if (wildcardHandlers) {
       const promises = Array.from(wildcardHandlers.values()).map(handler =>
-        handler(event).catch(err => {
+        handler(event).catch((err: unknown) => {
           console.error(`Error in wildcard handler:`, err);
         })
       );
@@ -593,8 +594,8 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
       fusionStrategy: 'late',  // Per PMC 2025: late fusion outperforms early
     });
 
-    // Initialize default interventions
-    this.initializeDefaultInterventions();
+    // Initialize default interventions (fire-and-forget in constructor)
+    void this.initializeDefaultInterventions();
   }
 
   /**
@@ -1301,17 +1302,25 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
 
       const blendedTrajectory: number[][] = [];
       for (let h = 0; h < hoursAhead; h++) {
-        const plrnnPoint = plrnnPrediction.trajectory[h] || plrnnPrediction.trajectory[plrnnPrediction.trajectory.length - 1];
-        const kfPoint = kfPrediction.trajectory[h] || kfPrediction.trajectory[kfPrediction.trajectory.length - 1];
+        // Extract observedState from PLRNN trajectory (IPLRNNState)
+        const plrnnTrajectoryState = plrnnPrediction.trajectory[h] ?? plrnnPrediction.trajectory[plrnnPrediction.trajectory.length - 1];
+        const plrnnPoint = plrnnTrajectoryState?.observedState ?? plrnnPrediction.meanPrediction;
+
+        // Extract state from KalmanFormer trajectory (optional IKalmanFormerState[])
+        const kfTrajectoryState = kfPrediction.trajectory?.[h] ?? kfPrediction.trajectory?.[kfPrediction.trajectory.length - 1];
+        const kfPoint = kfTrajectoryState?.kalmanState?.stateEstimate ?? kfPrediction.blendedPrediction;
 
         const blended = plrnnPoint.map((v, i) =>
-          v * plrnnWeight + (kfPoint[i] || 0) * kalmanWeight
+          v * plrnnWeight + (kfPoint[i] ?? 0) * kalmanWeight
         );
         blendedTrajectory.push(blended);
       }
 
-      // Get early warning signals from PLRNN
-      const earlyWarningSignals = this.plrnnEngine.detectEarlyWarningSignals(plrnnState);
+      // Get early warning signals from PLRNN using trajectory history
+      const earlyWarningSignals = this.plrnnEngine.detectEarlyWarnings(
+        plrnnPrediction.trajectory,
+        Math.min(5, plrnnPrediction.trajectory.length)
+      );
 
       // Build hybrid result
       const result: IHybridPrediction = {
@@ -1319,7 +1328,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
         kalmanFormerPrediction: kfPrediction,
         blendedPrediction: {
           trajectory: blendedTrajectory,
-          credibleIntervals: plrnnPrediction.credibleIntervals,
+          credibleIntervals: [plrnnPrediction.confidenceInterval],
           finalPrediction: blendedTrajectory[blendedTrajectory.length - 1] || beliefStateToObservation(currentBelief),
         },
         earlyWarningSignals,
@@ -1648,7 +1657,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
 
   async generateInsights(
     userId: string
-  ): Promise<ICognitiveCoreResponse<ITherapeuticInsight[]>> {
+  ): Promise<ICognitiveCoreResponse<TherapeuticInsight[]>> {
     const startTime = Date.now();
 
     try {
@@ -1906,7 +1915,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
   /**
    * Emit domain event
    */
-  private async emitEvent<T extends IDomainEvent>(event: T): Promise<void> {
+  private async emitEvent(event: IDomainEvent): Promise<void> {
     if (this.config.enableEventSourcing) {
       await this.eventStore.append(event.aggregateId, event);
     } else if (this.config.enableRealTimeEvents) {
@@ -1938,12 +1947,17 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
     text: string
   ): Observation {
     // Extract emotional indicators from EmotionalConsequence objects
-    const emotions = analysis.emotions || [];
-    const hasNegativeEmotion = emotions.some(e =>
-      e.valence < -0.3 || ['sad', 'angry', 'fearful', 'anxious', 'stressed'].includes(e.emotion)
+    const emotionalConsequences = analysis.emotions || [];
+
+    // Negative emotions based on EmotionType enum
+    const negativeEmotionTypes = ['sadness', 'anger', 'fear', 'anxiety', 'guilt', 'shame', 'loneliness', 'frustration', 'disgust', 'stress'];
+    const positiveEmotionTypes = ['joy', 'trust', 'hope', 'love', 'anticipation'];
+
+    const hasNegativeEmotion = emotionalConsequences.some(ec =>
+      ec.emotions.some(em => negativeEmotionTypes.includes(em.type) || em.intensity > 0.7)
     );
-    const hasPositiveEmotion = emotions.some(e =>
-      e.valence > 0.3 || ['happy', 'joyful', 'hopeful', 'calm', 'content'].includes(e.emotion)
+    const hasPositiveEmotion = emotionalConsequences.some(ec =>
+      ec.emotions.some(em => positiveEmotionTypes.includes(em.type))
     );
 
     // Extract distortions from thoughts
@@ -2048,11 +2062,13 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
   private extractCrisisIndicators(analysis: TextAnalysisResult): string[] {
     const indicators: string[] = [];
 
-    // Check for crisis-related emotions
-    const crisisEmotions = ['despair', 'hopeless', 'suicidal', 'panic'];
-    for (const emotion of analysis.emotions) {
-      if (crisisEmotions.includes(emotion.emotion) || emotion.intensity > 0.9) {
-        indicators.push(`high_intensity_${emotion.emotion}`);
+    // Check for crisis-related emotions (high intensity negative emotions)
+    const crisisEmotionTypes = ['fear', 'sadness', 'anxiety', 'shame', 'guilt'];
+    for (const ec of analysis.emotions) {
+      for (const em of ec.emotions) {
+        if (crisisEmotionTypes.includes(em.type) && em.intensity > 0.9) {
+          indicators.push(`high_intensity_${em.type}`);
+        }
       }
     }
 
@@ -2098,8 +2114,8 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
     analysis: TextAnalysisResult,
     state: IStateVector,
     allDistortions?: { type: string }[]
-  ): Promise<ITherapeuticInsight[]> {
-    const insights: ITherapeuticInsight[] = [];
+  ): Promise<TherapeuticInsight[]> {
+    const insights: TherapeuticInsight[] = [];
 
     // Extract distortions if not provided
     const distortions = allDistortions || analysis.thoughts.flatMap(t => t.distortions);
@@ -2118,17 +2134,35 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
   }
 
   /**
+   * Convert RiskLevel enum to numeric score (0-1)
+   */
+  private riskLevelToScore(level: string): number {
+    const riskScores: Record<string, number> = {
+      'none': 0,
+      'low': 0.2,
+      'medium': 0.5,
+      'high': 0.8,
+      'critical': 1.0,
+    };
+    return riskScores[level] ?? 0.5;
+  }
+
+  /**
    * Convert state to contextual features for intervention optimizer
    */
   private stateToContextFeatures(
     state: IStateVector,
     session: IUserSession
   ): IContextualFeatures {
+    // Calculate crisis proximity from early warnings (0-1)
+    const earlyWarningCount = state.risk.earlyWarnings?.length ?? 0;
+    const crisisProximity = Math.min(1, earlyWarningCount * 0.25);
+
     return {
-      valence: state.emotional.valence,
-      arousal: state.emotional.arousal,
-      dominance: state.emotional.dominance,
-      emotionalStability: 1 - state.emotional.emotionalLability,
+      valence: state.emotional.vad.valence,
+      arousal: state.emotional.vad.arousal,
+      dominance: state.emotional.vad.dominance,
+      emotionalStability: 1 - state.emotional.volatility,
       moodTrend: 'stable',
       cognitiveDistortionCount: state.cognitive.activeDistortions.length,
       primaryDistortion: state.cognitive.activeDistortions[0]?.type,
@@ -2137,8 +2171,8 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
       energyLevel: state.resources.energy.current,
       copingCapacity: state.resources.cognitiveCapacity.available,
       socialSupport: state.resources.socialResources.network.qualityScore,
-      riskLevel: state.risk.overallRiskLevel,
-      crisisProximity: state.risk.crisisProximity,
+      riskLevel: this.riskLevelToScore(state.risk.level),
+      crisisProximity,
       hourOfDay: new Date().getHours(),
       dayOfWeek: new Date().getDay(),
       minutesSinceLastInteraction: session.lastActivityAt
@@ -2161,7 +2195,7 @@ export class CognitiveCoreAPI implements ICognitiveCoreAPI {
    */
   private generateResponseSuggestions(
     analysis: TextAnalysisResult,
-    insights: ITherapeuticInsight[],
+    insights: TherapeuticInsight[],
     socraticQuestions?: SocraticQuestion[],
     recommendedIntervention?: IInterventionSelection,
     crisisDetected?: boolean,

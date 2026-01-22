@@ -553,11 +553,11 @@ export class PLRNNTrainer {
 
   private initGradientAccumulator(n: number): IGradientAccumulator {
     return {
-      dA: Array(n).fill(0),
-      dW: Array(n).fill(null).map(() => Array(n).fill(0)),
-      dB: Array(n).fill(null).map(() => Array(n).fill(0)),
-      dBiasLatent: Array(n).fill(0),
-      dBiasObserved: Array(n).fill(0),
+      dA: Array.from({ length: n }, () => 0),
+      dW: Array.from({ length: n }, () => Array.from({ length: n }, () => 0)),
+      dB: Array.from({ length: n }, () => Array.from({ length: n }, () => 0)),
+      dBiasLatent: Array.from({ length: n }, () => 0),
+      dBiasObserved: Array.from({ length: n }, () => 0),
       numSamples: 0,
     };
   }
@@ -966,10 +966,10 @@ export class PLRNNTrainer {
     return n > 0 ? sum / n : 0;
   }
 
-  private shuffleArray<T>(array: T[]): void {
+  private shuffleArray(array: unknown[]): void {
     for (let i = array.length - 1; i > 0; i--) {
       const j = secureRandomInt(0, i);
-      [array[i], array[j]] = [array[j]!, array[i]!];
+      [array[i], array[j]] = [array[j], array[i]];
     }
   }
 }

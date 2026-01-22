@@ -279,7 +279,7 @@ export class CausalDiscoveryEngine implements ICausalDiscoveryEngine {
         id: varId,
         name: template?.name ?? varId,
         nameRu: template?.nameRu ?? varId,
-        type: (template?.type!) ?? 'emotion',
+        type: template?.type ?? 'emotion',
         value: values.length > 0 ? (values[values.length - 1] ?? 0) : 0,
         observedAt: new Date(),
         isObservable: template?.isObservable ?? true,

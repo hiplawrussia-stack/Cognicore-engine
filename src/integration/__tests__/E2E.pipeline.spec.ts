@@ -557,7 +557,7 @@ describe('E2E Pipeline Integration Tests', () => {
       const result = await customAdapter.processWithTranscription(audio, text);
 
       expect(result.fusion).toBeDefined();
-      expect(result.fusion?.contributions.text).toBeGreaterThan(result.fusion?.contributions.voice!);
+      expect(result.fusion?.contributions.text).toBeGreaterThan(result.fusion?.contributions.voice ?? 0);
     });
 
     it('should calculate modality agreement', async () => {

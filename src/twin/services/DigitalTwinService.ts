@@ -795,7 +795,7 @@ export class DigitalTwinService implements IDigitalTwinService {
 
     // Add new state
     history.timepoints.push(new Date());
-    history.states.push(JSON.parse(JSON.stringify(twin))); // Deep copy
+    history.states.push(JSON.parse(JSON.stringify(twin)) as IDigitalTwinState); // Deep copy
 
     // Keep last 1000 states
     if (history.states.length > 1000) {

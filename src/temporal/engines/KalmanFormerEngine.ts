@@ -817,7 +817,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
           const Vj = V[j];
           if (!Vj) {continue;}
           for (let k = 0; k < headDim; k++) {
-            attended[k] += (scoresI[j] ?? 0) * (Vj[k] ?? 0);
+            attended[k] = (attended[k] ?? 0) + (scoresI[j] ?? 0) * (Vj[k] ?? 0);
           }
         }
         if (!headOutputs[i]) {headOutputs[i] = [];}
@@ -1003,21 +1003,21 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
 
   // Matrix operations
   private initIdentityMatrix(n: number): number[][] {
-    return Array(n).fill(null).map((_, i) =>
-      Array(n).fill(0).map((_, j) => i === j ? 1 : 0)
+    return Array.from({ length: n }, (_, i) =>
+      Array.from({ length: n }, (_, j) => i === j ? 1 : 0)
     );
   }
 
   private initDiagonalMatrix(n: number, value: number): number[][] {
-    return Array(n).fill(null).map((_, i) =>
-      Array(n).fill(0).map((_, j) => i === j ? value : 0)
+    return Array.from({ length: n }, (_, i) =>
+      Array.from({ length: n }, (_, j) => i === j ? value : 0)
     );
   }
 
   private initRandomMatrix(rows: number, cols: number): number[][] {
     const scale = Math.sqrt(2.0 / (rows + cols));
-    return Array(rows).fill(null).map(() =>
-      Array(cols).fill(0).map(() => (secureRandom() - 0.5) * 2 * scale)
+    return Array.from({ length: rows }, () =>
+      Array.from({ length: cols }, () => (secureRandom() - 0.5) * 2 * scale)
     );
   }
 
@@ -1059,20 +1059,22 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
     const colsB = B[0]?.length || 0;
     const colsA = A[0]?.length || 0;
 
-    return Array(rowsA).fill(null).map((_, i) =>
-      Array(colsB).fill(0).map((_, j) =>
-        Array(colsA).fill(0).reduce((sum, _, k) =>
-          sum + (A[i]?.[k] ?? 0) * (B[k]?.[j] ?? 0), 0
-        )
-      )
+    return Array.from({ length: rowsA }, (_, i) =>
+      Array.from({ length: colsB }, (_, j) => {
+        let sum = 0;
+        for (let k = 0; k < colsA; k++) {
+          sum += (A[i]?.[k] ?? 0) * (B[k]?.[j] ?? 0);
+        }
+        return sum;
+      })
     );
   }
 
   private transpose(A: number[][]): number[][] {
     const rows = A.length;
     const cols = A[0]?.length || 0;
-    return Array(cols).fill(null).map((_, i) =>
-      Array(rows).fill(0).map((_, j) => A[j]?.[i] || 0)
+    return Array.from({ length: cols }, (_, i) =>
+      Array.from({ length: rows }, (_, j) => A[j]?.[i] || 0)
     );
   }
 
@@ -1087,7 +1089,7 @@ export class KalmanFormerEngine implements IKalmanFormerEngine {
   private matInverse(A: number[][]): number[][] {
     const n = A.length;
     const identity = this.initIdentityMatrix(n);
-    const augmented = A.map((row, i) => [...row, ...(identity[i] ?? Array(n).fill(0))]);
+    const augmented = A.map((row, i) => [...row, ...(identity[i] ?? Array.from({ length: n }, () => 0))]);
 
     for (let i = 0; i < n; i++) {
       let maxRow = i;

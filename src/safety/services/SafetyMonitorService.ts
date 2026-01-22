@@ -780,7 +780,7 @@ export class SafetyMonitorService implements ISafetyMonitor {
    * Get EU AI Act compliance status
    */
   async getComplianceStatus(): Promise<IEUAIActCompliance> {
-    return EU_AI_ACT_CLASSIFICATION as any;
+    return EU_AI_ACT_CLASSIFICATION as IEUAIActCompliance;
   }
 
   /**

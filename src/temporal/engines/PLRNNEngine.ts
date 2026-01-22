@@ -100,7 +100,7 @@ export class PLRNNEngine implements IPLRNNEngine {
 
     // Diagonal autoregression: values < 1 for stability (eigenvalues < 1)
     // Research shows A should be in range [0.8, 0.95] for stable dynamics
-    const A = Array(n).fill(0).map(() => 0.85 + secureRandom() * 0.1);
+    const A = Array.from({ length: n }, () => 0.85 + secureRandom() * 0.1);
 
     // Off-diagonal connections: smaller scale for stability
     // Initialize with smaller magnitude to prevent gradient explosion
@@ -112,8 +112,8 @@ export class PLRNNEngine implements IPLRNNEngine {
 
     // Bias vectors: zero initialization for stability
     // Let the model learn appropriate biases during training
-    const biasLatent = Array(n).fill(0).map(() => 0);
-    const biasObserved = Array(n).fill(0).map(() => 0);
+    const biasLatent = Array.from({ length: n }, () => 0);
+    const biasObserved = Array.from({ length: n }, () => 0);
 
     // Dendritic weights if using dendPLRNN
     let dendriticWeights: number[][] | undefined;
@@ -544,7 +544,7 @@ export class PLRNNEngine implements IPLRNNEngine {
     }
 
     // Create intervention input
-    const input = Array(this.config.latentDim).fill(0);
+    const input = Array.from({ length: this.config.latentDim }, () => 0);
 
     switch (intervention) {
       case 'increase':
@@ -1201,7 +1201,7 @@ export class PLRNNEngine implements IPLRNNEngine {
   private approximateMaxEigenvalue(W: number[][]): number {
     // Power iteration for largest eigenvalue
     const n = W.length;
-    let v = Array(n).fill(1 / Math.sqrt(n));
+    let v = Array.from({ length: n }, () => 1 / Math.sqrt(n));
 
     for (let iter = 0; iter < 20; iter++) {
       const Av = this.matVec(W, v);
@@ -1211,7 +1211,7 @@ export class PLRNNEngine implements IPLRNNEngine {
     }
 
     const Av = this.matVec(W, v);
-    return Av.reduce((sum, x, i) => sum + x * v[i], 0);
+    return Av.reduce((sum, x, i) => sum + x * (v[i] ?? 0), 0);
   }
 
   // ============================================================================

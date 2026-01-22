@@ -325,8 +325,8 @@ export class PhenotypingService implements IDigitalPhenotypingService {
     let circadianMovement = 0.5;
     if (accelObs.length > 0) {
       // Group by hour and calculate consistency
-      const hourlyActivity: number[] = Array(24).fill(0);
-      const hourlyCounts: number[] = Array(24).fill(0);
+      const hourlyActivity: number[] = Array.from({ length: 24 }, () => 0);
+      const hourlyCounts: number[] = Array.from({ length: 24 }, () => 0);
 
       for (const obs of accelObs) {
         const hour = obs.timestamp.getHours();

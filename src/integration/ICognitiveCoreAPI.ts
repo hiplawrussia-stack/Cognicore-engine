@@ -293,7 +293,7 @@ export interface IEventBus {
    * Publish domain event
    * @param event - Event to publish
    */
-  publish<T extends IDomainEvent>(event: T): Promise<void>;
+  publish(event: IDomainEvent): Promise<void>;
 
   /**
    * Subscribe to event type

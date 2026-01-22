@@ -528,8 +528,8 @@ export class MonteCarloEngine implements ITwinSimulatorService {
     }
 
     // Get personalization parameters
-    const meanReversion = personalization?.meanReversionRate || new Map();
-    const volatility = personalization?.volatility || new Map();
+    const meanReversion = personalization?.meanReversionRate || new Map<string, number>();
+    const volatility = personalization?.volatility || new Map<string, number>();
 
     // Simulate forward using SDE: dx = f(x)dt + g(x)dW
     for (let step = 0; step <= numSteps; step++) {

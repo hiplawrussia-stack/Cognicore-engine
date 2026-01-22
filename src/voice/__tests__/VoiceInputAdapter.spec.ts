@@ -246,7 +246,7 @@ describe('VoiceInputAdapter', () => {
       );
 
       expect(result.fusion).toBeDefined();
-      expect(result.fusion?.contributions.text).toBeGreaterThan(result.fusion?.contributions.voice!);
+      expect(result.fusion?.contributions.text).toBeGreaterThan(result.fusion?.contributions.voice ?? 0);
     });
 
     it('should detect emotional discrepancy between modalities', () => {

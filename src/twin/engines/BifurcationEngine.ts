@@ -633,7 +633,7 @@ export class BifurcationEngine implements ITippingPointDetectorService {
     if (series.length < 10) {return 0;}
 
     // Find bimodal distribution
-    const histogram = new Array(10).fill(0);
+    const histogram = Array.from({ length: 10 }, () => 0);
     for (const value of series) {
       const bin = Math.min(9, Math.floor(value * 10));
       histogram[bin]++;

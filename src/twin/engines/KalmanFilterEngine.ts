@@ -241,12 +241,12 @@ export class KalmanFilterEngine implements IKalmanFilterService {
       predictedState: [...config.initialState],
       predictedCovariance: config.initialCovariance.map(row => [...row]),
 
-      innovation: Array(config.observationMatrix.length).fill(0),
-      innovationCovariance: Array(config.observationMatrix.length)
-        .fill(null)
-        .map(() => Array(config.observationMatrix.length).fill(0)),
+      innovation: Array.from({ length: config.observationMatrix.length }, () => 0),
+      innovationCovariance: Array.from({ length: config.observationMatrix.length }, () =>
+        Array.from({ length: config.observationMatrix.length }, () => 0)),
 
-      kalmanGain: Array(n).fill(null).map(() => Array(config.observationMatrix.length).fill(0)),
+      kalmanGain: Array.from({ length: n }, () =>
+        Array.from({ length: config.observationMatrix.length }, () => 0)),
 
       normalized_innovation_squared: 0,
       isOutlier: false,

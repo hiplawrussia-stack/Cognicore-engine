@@ -1654,7 +1654,7 @@ export class DeepCognitiveMirror implements IDeepCognitiveMirror {
   }
 
   private updateDistortionCounts(chain: ABCDChain): void {
-    const counts = this.distortionCounts.get(chain.userId) ?? new Map();
+    const counts = this.distortionCounts.get(chain.userId) ?? new Map<CognitiveDistortionType, number>();
 
     for (const thought of chain.beliefs) {
       for (const distortion of thought.distortions) {

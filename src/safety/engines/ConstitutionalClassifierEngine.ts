@@ -746,7 +746,7 @@ export class ConstitutionalClassifierEngine implements IConstitutionalClassifier
     // Check mustNotDo patterns
     for (const rule of principle.mustNotDo) {
       const rulePattern = this.ruleToPattern(rule);
-      if (rulePattern && rulePattern.test(output)) {
+      if (rulePattern?.test(output)) {
         score -= 0.3;
         reasons.push(`Violated: ${rule}`);
       }
