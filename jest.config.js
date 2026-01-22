@@ -14,6 +14,7 @@ module.exports = {
   },
   moduleNameMapper: {
     '^uuid$': '<rootDir>/src/__mocks__/uuid.ts',
+    '^vitest$': '<rootDir>/src/__mocks__/vitest.ts',
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   collectCoverageFrom: [
